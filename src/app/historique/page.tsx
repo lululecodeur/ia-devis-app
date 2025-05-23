@@ -39,8 +39,8 @@ export default function HistoriquePage() {
   useEffect(() => {
     fetch('http://localhost:5000/devis-final')
       .then((res) => res.json())
-      .then((data) => {
-        setDevisList(data);
+      .then((data: unknown) => {
+        setDevisList(data as Devis[]);
         setLoading(false);
       })
       .catch((err) => {

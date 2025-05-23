@@ -1070,22 +1070,20 @@ const exporterPDFSansClasses = async () => {
     </Card>
 
 <Card title="🖊️ Signatures numériques">
-  <div className="flex flex-col lg:flex-row gap-6">
+  <div className="flex flex-col gap-6">
     <SignatureBlock
-  label="✍️ Signature du client"
-  value={signatureClient}
-  onChange={setSignatureClient}
-/>
-
-<SignatureBlock
-  label="✍️ Signature de l’émetteur"
-  value={signatureEmetteur}
-  onChange={setSignatureEmetteur}
-/>
-
+      label="✍️ Signature du client"
+      value={signatureClient}
+      onChange={setSignatureClient}
+    />
+    <SignatureBlock
+      label="✍️ Signature de l’émetteur"
+      value={signatureEmetteur}
+      onChange={setSignatureEmetteur}
+    />
   </div>
-  
 </Card>
+
 
 
 {/* Bouton fixe en bas à gauche */}
@@ -1367,7 +1365,8 @@ const exporterPDFSansClasses = async () => {
 
   {/* Signatures */}
   <div style={{ display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
-    <div style={{ width: "45%" }}>
+    <div style={{ width: "45%", textAlign: "right", overflow: "hidden", wordBreak: "break-word" }}>
+
       <p><strong>Signature du client</strong></p>
       {signatureClient ? (
   <img src={signatureClient} alt="Signature Client" style={{ height: "80px" }} />

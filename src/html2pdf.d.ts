@@ -1,6 +1,7 @@
 /* eslint-disable */
 
 
+
 declare module "html2pdf.js" {
   interface Html2PdfOptions {
     margin?: number | number[];

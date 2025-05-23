@@ -1,3 +1,5 @@
+"use client";
+
 export const exporterPDF = async () => {
   console.log("📄 Lancement export PDF !");
   const html2pdf = (await import("html2pdf.js")).default;

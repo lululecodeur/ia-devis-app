@@ -4,15 +4,30 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+interface Ligne {
+  designation: string;
+  unite: string;
+  quantite: number;
+  prix: number;
+}
+
+interface InfoEntreprise {
+  nom: string;
+  adresse?: string;
+  siret?: string;
+  email?: string;
+  tel?: string;
+}
+
 interface Devis {
   date: string;
   titre: string;
-  lignes: any[];
+  lignes: Ligne[];
   intro?: string;
   conclusion?: string;
   mentions?: string;
-  emetteur?: any;
-  recepteur?: any;
+  emetteur?: InfoEntreprise;
+  recepteur?: InfoEntreprise;
   logo?: string;
 }
 
@@ -22,19 +37,17 @@ export default function HistoriquePage() {
   const router = useRouter();
 
   useEffect(() => {
-  fetch('http://localhost:5000/devis-final')
-    .then((res) => res.json())
-    .then((data) => {
-      setDevisList(data);
-      setLoading(false);
-    })
-
-    .catch((err) => {
-      console.error("Erreur fetch historique :", err);
-      setLoading(false);
-    });
-}, []);
-
+    fetch('http://localhost:5000/devis-final')
+      .then((res) => res.json())
+      .then((data) => {
+        setDevisList(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Erreur fetch historique :', err);
+        setLoading(false);
+      });
+  }, []);
 
   const reutiliserDevis = (devis: Devis) => {
     localStorage.setItem('devisEnCours', JSON.stringify(devis));
@@ -56,7 +69,9 @@ export default function HistoriquePage() {
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="font-semibold">{devis.titre}</h2>
-                  <p className="text-sm text-gray-500">{new Date(devis.date).toLocaleString('fr-FR')}</p>
+                  <p className="text-sm text-gray-500">
+                    {new Date(devis.date).toLocaleString('fr-FR')}
+                  </p>
                   <p className="text-sm text-gray-600 mt-1">
                     Client : {devis.recepteur?.nom || 'Non spécifié'}
                   </p>

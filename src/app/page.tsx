@@ -335,8 +335,10 @@ const exporterPDFSansClasses = async () => {
 
 
 {mode === "devis" && (
-    <main className="min-h-screen p-8 bg-gray-100 font-sans text-black">
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6">
+    <main className="min-h-screen p-8 bg-gray-100 font-sans text-black overflow-x-hidden">
+
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 max-w-screen-xl mx-auto">
+
 
         <div className="w-full min-w-0 flex flex-col gap-6">
 

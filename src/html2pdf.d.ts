@@ -11,7 +11,7 @@ declare module "html2pdf.js" {
     set: (options: Html2PdfOptions) => Html2Pdf;
     from: (element: HTMLElement) => Html2Pdf;
     save: () => void;
-    outputPdf?: () => any;
+    outputPdf?: () => unknown; // ✅ plus de `any`
   }
 
   const html2pdf: () => Html2Pdf;

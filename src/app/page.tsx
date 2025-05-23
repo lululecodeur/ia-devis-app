@@ -72,11 +72,16 @@ const saveSignature = () => {
 const [signatureEmetteur, setSignatureEmetteur] = useState<string | null>(null);
 
 const [mode, setMode] = useState<"accueil" | "devis">("accueil");
+const [deviceScale, setDeviceScale] = useState(1);
 
 
 
 
-
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    setDeviceScale(1 / window.devicePixelRatio);
+  }
+}, []);
 
   
 
@@ -335,8 +340,7 @@ const exporterPDFSansClasses = async () => {
 
 
 {mode === "devis" && (
-    <main className="min-h-screen p-8 bg-gray-100 font-sans text-black overflow-x-hidden">
-
+    <main className="min-h-screen p-8 bg-gray-100 font-sans text-black">
   <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 max-w-screen-xl mx-auto">
 
 
@@ -1165,22 +1169,25 @@ const exporterPDFSansClasses = async () => {
 <div className="hidden lg:block w-[794px] shrink-0">
   <div className="sticky top-8">
 
-    <div
-      id="devis-final"
-      style={{
-  width: "794px",
-  minHeight: "1123px",
-  backgroundColor: "#ffffff",
-  color: "#000000",
-  padding: "24px",
-  fontSize: "14px",
-  fontFamily: "sans-serif",
-  border: "1px solid #ccc",
-  borderRadius: "12px",
-  boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-  margin: "0 auto",
-      }}
-    >
+<div
+  id="devis-final"
+  style={{
+    width: "794px",
+    minHeight: "1123px",
+    backgroundColor: "#ffffff",
+    color: "#000000",
+    padding: "24px",
+    fontSize: "14px",
+    fontFamily: "sans-serif",
+    border: "1px solid #ccc",
+    borderRadius: "12px",
+    boxShadow: "0 0 10px rgba(0,0,0,0.1)",
+    margin: "0 auto",
+    transform: `scale(${deviceScale})`,
+    transformOrigin: "top left",
+  }}
+>
+
   {/* Header logo + date */}
   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
     {logo && (

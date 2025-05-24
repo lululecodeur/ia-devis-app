@@ -48,11 +48,19 @@ interface LignePiece {
   mode: 'calculé' | 'manuel';
 }
 
+type LigneCustom = { [key: string]: any };
+
+interface ColonneCategorie {
+  nom: string;
+  type: 'texte' | 'quantite' | 'prix' | 'prixAvecMarge';
+}
+
 interface CategorieDynamique {
   nom: string;
-  emoji: string;
-  lignes: LigneGenerique[];
+  lignes: LigneCustom[];
+  colonnes: ColonneCategorie[]; // ← nouveau
   afficher: boolean;
+  emoji?: string;
 }
 
 interface LigneGenerique {
@@ -158,6 +166,14 @@ export default function Home() {
   const [afficherPieces, setAfficherPieces] = useState(true);
   const lignesPourPDF: { type: 'header' | 'ligne'; contenu?: Ligne }[] = [];
   const [numeroDevis, setNumeroDevis] = useState('');
+  const [colonnesCustom, setColonnesCustom] = useState<
+    { nom: string; type: 'texte' | 'quantite' | 'prix' | 'prixAvecMarge' }[]
+  >([]);
+
+  const [nouvelleColonne, setNouvelleColonne] = useState('');
+  const [typeColonne, setTypeColonne] = useState<'texte' | 'quantite' | 'prix' | 'prixAvecMarge'>(
+    'texte'
+  );
 
   if (lignesMainOeuvre.length > 0) {
     lignesPourPDF.push({
@@ -248,13 +264,29 @@ export default function Home() {
 
     ...categoriesDynamiques
       .filter(c => c.afficher)
-      .flatMap(c =>
-        c.lignes.map(l => ({
-          designation: `[${c.nom}] ${l.designation}`,
-          unite: l.unite,
-          quantite: l.quantite,
-          prix: l.prix,
-        }))
+      .flatMap(cat =>
+        cat.lignes.map(ligne => {
+          let prix = 0;
+          for (const col of cat.colonnes) {
+            if (col.type === 'prix') {
+              const quantite = ligne['quantite'] ?? 1;
+              const pu = ligne[col.nom] ?? 0;
+              prix += pu * quantite;
+            } else if (col.type === 'prixAvecMarge') {
+              const quantite = ligne['quantite'] ?? 1;
+              const achat = ligne[col.nom + '_achat'] ?? 0;
+              const marge = ligne[col.nom + '_marge'] ?? 0;
+              const pu = achat * (1 + marge / 100);
+              prix += pu * quantite;
+            }
+          }
+          return {
+            designation: `[${cat.nom}] ${ligne.designation ?? ''}`,
+            unite: ligne.unite ?? 'U',
+            quantite: 1,
+            prix,
+          };
+        })
       ),
   ];
 
@@ -480,9 +512,28 @@ export default function Home() {
     }
   };
 
-  // Le JSX complet est maintenu dans le reste du code.
-  // Trop volumineux pour affichage ici, mais tout est fonctionnel.
-  // Voir section suivante ou téléverser dans un éditeur pour le code JSX complet.
+  function calculerTotalCategorie(cat: CategorieDynamique): number {
+    let total = 0;
+    for (const ligne of cat.lignes) {
+      for (const col of cat.colonnes) {
+        if (col.type === 'prix') {
+          const prix = ligne[col.nom] ?? 0;
+          const quantite = ligne['quantite'] ?? 1;
+          total += prix * quantite;
+        }
+        if (col.type === 'prixAvecMarge') {
+          const achat = ligne[col.nom + '_achat'] ?? 0;
+          const marge = ligne[col.nom + '_marge'] ?? 0;
+          const quantite = ligne['quantite'] ?? 1;
+          const prixFinal = achat * (1 + marge / 100);
+          total += prixFinal * quantite;
+        }
+      }
+    }
+    return total;
+  }
+
+  // separation entre home et return
 
   return (
     <>
@@ -1031,7 +1082,7 @@ export default function Home() {
                   {onglet === 'manuel' && (
                     <div className="flex flex-col gap-6">
                       {/* 🟩 Bloc classique : main d'œuvre + pièces */}
-                      <Card>
+                      <Card title="📁 Détail des prestations">
                         <BlocMainOeuvre
                           lignes={lignesMainOeuvre}
                           setLignes={setLignesMainOeuvre}
@@ -1051,42 +1102,11 @@ export default function Home() {
                         />
                       </Card>
 
-                      {/* 🆕 Interface d’ajout de catégorie personnalisée */}
-                      <Card title="➕ Ajouter une catégorie personnalisée">
-                        <div className="flex gap-4">
-                          <input
-                            type="text"
-                            value={nouvelleCategorie}
-                            onChange={e => setNouvelleCategorie(e.target.value)}
-                            className="w-full p-3 border rounded"
-                            placeholder="Ex: Location, Transport, Divers"
-                          />
-                          <button
-                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                            onClick={() => {
-                              const nom = nouvelleCategorie.trim();
-                              if (!nom) return;
-                              setCategoriesDynamiques([
-                                ...categoriesDynamiques,
-                                {
-                                  nom,
-                                  emoji: '📦',
-                                  lignes: [],
-                                  afficher: true,
-                                },
-                              ]);
-                              setNouvelleCategorie('');
-                            }}
-                          >
-                            ➕ Ajouter
-                          </button>
-                        </div>
-                      </Card>
-
-                      {/* 🔁 Catégories personnalisées */}
-                      {categoriesDynamiques.map((cat, index) => (
-                        <Card key={index}>
+                      {/* 🟦 Bloc séparé : catégories dynamiques */}
+                      <Card title="📦 Catégories personnalisées">
+                        {categoriesDynamiques.map((cat, index) => (
                           <BlocCategorie
+                            key={index}
                             categorie={cat}
                             onUpdate={updatedCat => {
                               const copie = [...categoriesDynamiques];
@@ -1099,8 +1119,52 @@ export default function Home() {
                               setCategoriesDynamiques(copie);
                             }}
                           />
-                        </Card>
-                      ))}
+                        ))}
+
+                        {/* Ajout d'une nouvelle catégorie */}
+                        <div className="mt-10">
+                          <h3 className="text-md font-semibold text-gray-700 mb-2">
+                            ➕ Ajouter une catégorie personnalisée
+                          </h3>
+                          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                            <input
+                              type="text"
+                              value={nouvelleCategorie}
+                              onChange={e => setNouvelleCategorie(e.target.value)}
+                              className="w-full sm:w-auto flex-grow p-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Ex : Location, Transport, Divers"
+                            />
+                            <button
+                              onClick={() => {
+                                const nom = nouvelleCategorie.trim();
+                                if (!nom) return;
+
+                                setCategoriesDynamiques([
+                                  ...categoriesDynamiques,
+                                  {
+                                    nom,
+                                    colonnes: [
+                                      { nom: 'Désignation', type: 'texte' },
+                                      { nom: 'Quantité', type: 'quantite' },
+                                      { nom: 'Prix', type: 'prixAvecMarge' },
+                                    ],
+                                    lignes: [],
+                                    afficher: true,
+                                  },
+                                ]);
+                                setNouvelleCategorie('');
+                              }}
+                              className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition"
+                            >
+                              ➕ Ajouter
+                            </button>
+                          </div>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Les colonnes par défaut seront : designation (texte), quantite
+                            (numérique) et prix (avec marge).
+                          </p>
+                        </div>
+                      </Card>
                     </div>
                   )}
 
@@ -1693,7 +1757,6 @@ export default function Home() {
                       borderCollapse: 'collapse',
                       marginTop: '24px',
                       border: '1px solid #e5e7eb',
-
                       fontSize: '14px',
                     }}
                   >
@@ -1701,11 +1764,10 @@ export default function Home() {
                       {/* MAIN D’ŒUVRE */}
                       {lignesMainOeuvre.length > 0 && afficherMainOeuvre && (
                         <>
-                          <tr>
+                          <tr style={{ backgroundColor: '#f2f2f2' }}>
                             <td
                               colSpan={5}
                               style={{
-                                backgroundColor: '#f2f2f2',
                                 fontWeight: 'bold',
                                 padding: '8px',
                                 textAlign: 'left',
@@ -1763,6 +1825,7 @@ export default function Home() {
                               Total HT (€)
                             </th>
                           </tr>
+
                           {lignesMainOeuvre.map((ligne, index) => {
                             const prix =
                               ligne.mode === 'fixe'
@@ -1790,11 +1853,10 @@ export default function Home() {
                       {/* PIÈCES */}
                       {lignesPieces.length > 0 && afficherPieces && (
                         <>
-                          <tr>
+                          <tr style={{ backgroundColor: '#f2f2f2' }}>
                             <td
                               colSpan={5}
                               style={{
-                                backgroundColor: '#f2f2f2',
                                 fontWeight: 'bold',
                                 padding: '8px',
                                 textAlign: 'left',
@@ -1873,94 +1935,111 @@ export default function Home() {
                           })}
                         </>
                       )}
-                      {categoriesDynamiques.map((cat, i) =>
-                        cat.afficher && cat.lignes.length > 0 ? (
-                          <React.Fragment key={i}>
-                            <tr>
-                              <td
-                                colSpan={5}
-                                style={{
-                                  backgroundColor: '#f2f2f2',
-                                  fontWeight: 'bold',
-                                  padding: '8px',
-                                  textAlign: 'left',
-                                  borderBottom: '1px solid #e5e7eb',
-                                }}
-                              >
-                                {cat.emoji} {cat.nom}
-                              </td>
-                            </tr>
-                            <tr>
-                              <th
-                                style={{
-                                  padding: '6px',
-                                  borderBottom: '1px solid #e5e7eb',
-                                  textAlign: 'center',
-                                }}
-                              >
-                                Désignation
-                              </th>
-                              <th
-                                style={{
-                                  padding: '6px',
-                                  borderBottom: '1px solid #e5e7eb',
-                                  textAlign: 'center',
-                                }}
-                              >
-                                Unité
-                              </th>
-                              <th
-                                style={{
-                                  padding: '6px',
-                                  borderBottom: '1px solid #e5e7eb',
-                                  textAlign: 'center',
-                                }}
-                              >
-                                Qté
-                              </th>
-                              <th
-                                style={{
-                                  padding: '6px',
-                                  borderBottom: '1px solid #e5e7eb',
-                                  textAlign: 'center',
-                                }}
-                              >
-                                PU HT (€)
-                              </th>
-                              <th
-                                style={{
-                                  padding: '6px',
-                                  borderBottom: '1px solid #e5e7eb',
-                                  textAlign: 'center',
-                                }}
-                              >
-                                Total HT (€)
-                              </th>
-                            </tr>
-                            {cat.lignes.map((ligne, j) => (
-                              <tr key={`cat-${i}-ligne-${j}`}>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>
-                                  {ligne.designation}
-                                </td>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>
-                                  {ligne.unite}
-                                </td>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>
-                                  {ligne.quantite}
-                                </td>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>
-                                  {ligne.prix.toFixed(2)}
-                                </td>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>
-                                  {(ligne.quantite * ligne.prix).toFixed(2)}
-                                </td>
-                              </tr>
-                            ))}
-                          </React.Fragment>
-                        ) : null
-                      )}
                     </tbody>
                   </table>
+
+                  {categoriesDynamiques.map((cat, i) =>
+                    cat.afficher && cat.lignes.length > 0 ? (
+                      <table
+                        key={i}
+                        style={{
+                          width: '100%',
+                          borderCollapse: 'collapse', // pour souder les cellules
+                          borderSpacing: 0, // important !
+                          margin: 0, // empêche les marges verticales
+                          padding: 0,
+                          fontSize: '14px',
+                          border: '1px solid #e5e7eb',
+                        }}
+                      >
+                        <thead>
+                          {/* Titre de la catégorie */}
+                          <tr style={{ backgroundColor: '#f2f2f2' }}>
+                            <th
+                              colSpan={cat.colonnes.length + 1}
+                              style={{
+                                textAlign: 'left',
+                                padding: '8px',
+                                fontWeight: 'bold',
+                                borderBottom: '1px solid #e5e7eb',
+                              }}
+                            >
+                              {cat.emoji} {cat.nom}
+                            </th>
+                          </tr>
+
+                          {/* En-têtes */}
+                          <tr>
+                            {cat.colonnes.map((col, idx) => (
+                              <th
+                                key={`col-${idx}`}
+                                style={{
+                                  padding: '6px',
+                                  borderBottom: '1px solid #e5e7eb',
+                                  textAlign: 'center',
+                                  fontWeight: 'bold',
+                                }}
+                              >
+                                {col.nom}
+                              </th>
+                            ))}
+                            <th
+                              style={{
+                                padding: '6px',
+                                borderBottom: '1px solid #e5e7eb',
+                                textAlign: 'center',
+                                fontWeight: 'bold',
+                              }}
+                            >
+                              Total HT (€)
+                            </th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {cat.lignes.map((ligne, j) => (
+                            <tr key={`cat-${i}-ligne-${j}`}>
+                              {cat.colonnes.map((col, idx) => {
+                                let val = ligne[col.nom];
+
+                                if (col.type === 'prixAvecMarge') {
+                                  const achat = Number(ligne[col.nom + '_achat'] ?? 0);
+                                  const marge = Number(ligne[col.nom + '_marge'] ?? 0);
+                                  val = (achat * (1 + marge / 100)).toFixed(2);
+                                }
+
+                                return (
+                                  <td
+                                    key={`col-${idx}`}
+                                    style={{ padding: '6px', textAlign: 'center' }}
+                                  >
+                                    {typeof val === 'number' ? val.toFixed(2) : val ?? '—'}
+                                  </td>
+                                );
+                              })}
+
+                              <td style={{ padding: '6px', textAlign: 'center' }}>
+                                {(() => {
+                                  let pu = 0;
+                                  const quantite = Number(ligne['quantite'] ?? 1);
+                                  for (const col of cat.colonnes) {
+                                    if (col.type === 'prix') {
+                                      pu += Number(ligne[col.nom] ?? 0);
+                                    } else if (col.type === 'prixAvecMarge') {
+                                      const achat = Number(ligne[col.nom + '_achat'] ?? 0);
+                                      const marge = Number(ligne[col.nom + '_marge'] ?? 0);
+                                      pu += achat * (1 + marge / 100);
+                                    }
+                                  }
+                                  return (pu * quantite).toFixed(2);
+                                })()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : null
+                  )}
 
                   <div
                     style={{

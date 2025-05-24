@@ -1,17 +1,17 @@
 'use client';
 import { useState } from 'react';
 
-interface LigneGenerique {
-  designation: string;
-  quantite: number;
-  prix: number;
-  unite: string;
+type LigneCustom = { [cle: string]: any };
+
+interface ColonneCategorie {
+  nom: string;
+  type: 'texte' | 'quantite' | 'prix' | 'prixAvecMarge';
 }
 
 interface CategorieDynamique {
   nom: string;
-  emoji: string;
-  lignes: LigneGenerique[];
+  colonnes: ColonneCategorie[];
+  lignes: LigneCustom[];
   afficher: boolean;
 }
 
@@ -25,24 +25,16 @@ export default function BlocCategorie({
   onDelete: () => void;
 }) {
   const ajouterLigne = () => {
-    const nouvelleLigne: LigneGenerique = {
-      designation: '',
-      quantite: 1,
-      prix: 0,
-      unite: 'U',
-    };
+    const nouvelleLigne: LigneCustom = {};
+    categorie.colonnes.forEach(col => {
+      if (col.type === 'prixAvecMarge') {
+        nouvelleLigne[col.nom + '_achat'] = 0;
+        nouvelleLigne[col.nom + '_marge'] = 0;
+      } else {
+        nouvelleLigne[col.nom] = col.type === 'texte' ? '' : 0;
+      }
+    });
     onUpdate({ ...categorie, lignes: [...categorie.lignes, nouvelleLigne] });
-  };
-
-  const modifierLigne = (index: number, champ: keyof LigneGenerique, valeur: string | number) => {
-    const lignes = [...categorie.lignes];
-    if (champ === 'quantite' || champ === 'prix') {
-      lignes[index][champ] = parseFloat(String(valeur).replace(',', '.')) || 0;
-    } else if (champ === 'designation' || champ === 'unite') {
-      lignes[index][champ] = valeur as string;
-    }
-
-    onUpdate({ ...categorie, lignes });
   };
 
   const supprimerLigne = (index: number) => {
@@ -55,70 +47,166 @@ export default function BlocCategorie({
     <div className="flex flex-col gap-4">
       {/* Titre modifiable */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span>{categorie.emoji}</span>
-          <input
-            type="text"
-            value={categorie.nom}
-            onChange={e => onUpdate({ ...categorie, nom: e.target.value })}
-            className="text-lg font-semibold bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none transition"
-          />
-        </div>
-
-        {/* Supprimer catégorie */}
+        <input
+          type="text"
+          value={categorie.nom}
+          onChange={e => onUpdate({ ...categorie, nom: e.target.value })}
+          className="text-lg font-semibold bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none transition"
+        />
         <button onClick={onDelete} className="text-red-600 text-sm underline hover:text-red-800">
           Supprimer cette catégorie
         </button>
       </div>
 
-      {/* Tableau */}
+      {/* Tableau dynamique */}
       <div className="overflow-x-auto">
+        {/* 🔧 Configuration des colonnes */}
+        <div className="flex flex-col gap-4 mt-4">
+          <h4 className="text-sm font-medium text-gray-800">Colonnes de la catégorie</h4>
+
+          {categorie.colonnes.map((col, idx) => (
+            <div key={idx} className="flex gap-2 items-center">
+              {/* Nom de la colonne */}
+              <input
+                type="text"
+                value={col.nom}
+                onChange={e => {
+                  const colonnes = [...categorie.colonnes];
+                  colonnes[idx].nom = e.target.value;
+                  onUpdate({ ...categorie, colonnes });
+                }}
+                className="flex-1 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={
+                  col.type === 'prixAvecMarge'
+                    ? 'ex : matériel'
+                    : col.type === 'prix'
+                    ? 'ex : service'
+                    : col.type === 'quantite'
+                    ? 'ex : quantité'
+                    : 'ex : désignation'
+                }
+              />
+
+              {/* Type de champ */}
+              <select
+                value={col.type}
+                onChange={e => {
+                  const colonnes = [...categorie.colonnes];
+                  colonnes[idx].type = e.target.value as any;
+                  onUpdate({ ...categorie, colonnes });
+                }}
+                className="w-48 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="texte">Texte</option>
+                <option value="quantite">Quantité</option>
+                <option value="prix">Prix</option>
+                <option value="prixAvecMarge">Prix avec marge</option>
+              </select>
+
+              {/* Bouton supprimer */}
+              <button
+                onClick={() => {
+                  const colonnes = [...categorie.colonnes];
+                  colonnes.splice(idx, 1);
+                  onUpdate({ ...categorie, colonnes });
+                }}
+                className="text-red-600 hover:text-red-800 text-lg"
+                title="Supprimer cette colonne"
+              >
+                🗑️
+              </button>
+            </div>
+          ))}
+
+          {/* Ajouter une nouvelle colonne */}
+          <button
+            onClick={() =>
+              onUpdate({
+                ...categorie,
+                colonnes: [...categorie.colonnes, { nom: '', type: 'texte' }],
+              })
+            }
+            className="text-sm text-blue-600 hover:text-blue-800 underline w-fit"
+          >
+            ➕ Ajouter une colonne
+          </button>
+        </div>
+
         <table className="w-full text-sm border-separate border-spacing-y-2">
           <thead>
             <tr className="text-left text-xs uppercase text-gray-600 tracking-wider">
-              <th className="px-3 py-2 bg-gray-100">Désignation</th>
-              <th className="px-3 py-2 bg-gray-100">Unité</th>
-              <th className="px-3 py-2 bg-gray-100">Quantité</th>
-              <th className="px-3 py-2 bg-gray-100">Prix (€)</th>
+              {categorie.colonnes.map((col, idx) => (
+                <th key={idx} className="px-3 py-2 bg-gray-100">
+                  {col.nom}
+                </th>
+              ))}
               <th className="px-3 py-2 bg-gray-100 text-center">🗑️</th>
             </tr>
           </thead>
           <tbody>
             {categorie.lignes.map((ligne, index) => (
               <tr key={index} className="bg-white shadow-sm rounded-xl">
-                <td className="px-3 py-2">
-                  <input
-                    value={ligne.designation}
-                    onChange={e => modifierLigne(index, 'designation', e.target.value)}
-                    className="w-full bg-transparent text-sm"
-                    placeholder="Désignation"
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    value={ligne.unite}
-                    onChange={e => modifierLigne(index, 'unite', e.target.value)}
-                    className="w-full bg-transparent text-sm"
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    type="text"
-                    value={ligne.quantite}
-                    onChange={e => modifierLigne(index, 'quantite', e.target.value)}
-                    className="w-full bg-transparent text-sm"
-                    placeholder="1"
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    type="text"
-                    value={ligne.prix}
-                    onChange={e => modifierLigne(index, 'prix', e.target.value)}
-                    className="w-full bg-transparent text-sm"
-                    placeholder="0"
-                  />
-                </td>
+                {categorie.colonnes.map((col, colIndex) => {
+                  const cle = col.nom;
+
+                  if (col.type === 'prixAvecMarge') {
+                    return (
+                      <td key={colIndex} className="px-3 py-2">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs font-medium text-gray-600">{cle} (calculé)</span>
+                          <div className="flex gap-2">
+                            <div className="flex flex-col w-1/2">
+                              <label className="text-[10px] text-gray-500 mb-1">€ achat</label>
+                              <input
+                                type="number"
+                                value={ligne[cle + '_achat'] ?? ''}
+                                onChange={e => {
+                                  const lignes = [...categorie.lignes];
+                                  lignes[index][cle + '_achat'] = parseFloat(e.target.value) || 0;
+                                  onUpdate({ ...categorie, lignes });
+                                }}
+                                className="w-full bg-transparent text-sm border border-gray-200 rounded px-2"
+                              />
+                            </div>
+                            <div className="flex flex-col w-1/2">
+                              <label className="text-[10px] text-gray-500 mb-1">% marge</label>
+                              <input
+                                type="number"
+                                value={ligne[cle + '_marge'] ?? ''}
+                                onChange={e => {
+                                  const lignes = [...categorie.lignes];
+                                  lignes[index][cle + '_marge'] = parseFloat(e.target.value) || 0;
+                                  onUpdate({ ...categorie, lignes });
+                                }}
+                                className="w-full bg-transparent text-sm border border-gray-200 rounded px-2"
+                              />
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-gray-500 mt-1 italic text-center">
+                            Prix = achat × (1 + marge / 100)
+                          </p>
+                        </div>
+                      </td>
+                    );
+                  }
+
+                  return (
+                    <td key={colIndex} className="px-3 py-2">
+                      <input
+                        type={col.type === 'texte' ? 'text' : 'number'}
+                        value={ligne[cle] ?? ''}
+                        onChange={e => {
+                          const lignes = [...categorie.lignes];
+                          lignes[index][cle] =
+                            col.type === 'texte' ? e.target.value : parseFloat(e.target.value) || 0;
+                          onUpdate({ ...categorie, lignes });
+                        }}
+                        className="w-full bg-transparent text-sm border border-gray-200 rounded px-2"
+                      />
+                    </td>
+                  );
+                })}
+
                 <td className="px-3 py-2 text-center">
                   <button
                     onClick={() => supprimerLigne(index)}
@@ -141,7 +229,7 @@ export default function BlocCategorie({
         ➕ Ajouter une ligne
       </button>
 
-      {/* Affichage dans PDF */}
+      {/* Affichage dans le PDF */}
       <div className="flex items-center gap-4 mt-4">
         <span className="text-sm font-medium text-gray-700">Afficher dans le PDF</span>
         <label className="relative inline-flex items-center cursor-pointer">

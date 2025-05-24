@@ -367,23 +367,29 @@ const exporterPDFSansClasses = async () => {
   const devis = document.getElementById("devis-final");
   if (!devis) return;
 
-  // Clone
   const clone = devis.cloneNode(true) as HTMLElement;
 
-  // Fix mobile : layout A4 sans transform
-  clone.style.transform = "none";
-  clone.style.transformOrigin = "top left";
+  // Fix layout PDF
   clone.style.width = "794px";
   clone.style.minHeight = "1123px";
-  clone.style.padding = "24px";
-  clone.style.backgroundColor = "#fff";
+  clone.style.padding = "32px";
+  clone.style.margin = "0 auto";
+  clone.style.backgroundColor = "#ffffff";
+  clone.style.fontFamily = "Arial, sans-serif";
+  clone.style.fontSize = "14px";
+  clone.style.lineHeight = "1.5";
+  clone.style.transform = "none";
+  clone.style.transformOrigin = "top left";
 
-  // Nettoyage des classes et styles
+  // Nettoyage des styles internes
   clone.querySelectorAll("*").forEach((el) => {
-    el.removeAttribute("class");
-    el.removeAttribute("style");
     (el as HTMLElement).style.color = "#000";
     (el as HTMLElement).style.backgroundColor = "#fff";
+    (el as HTMLElement).style.fontFamily = "Arial, sans-serif";
+    (el as HTMLElement).style.fontSize = "14px";
+    (el as HTMLElement).style.lineHeight = "1.5";
+    el.removeAttribute("class");
+    el.removeAttribute("style");
   });
 
   // Conteneur temporaire
@@ -391,15 +397,13 @@ const exporterPDFSansClasses = async () => {
   container.style.position = "fixed";
   container.style.top = "-9999px";
   container.style.left = "0";
-  container.style.width = "800px";
-  container.style.background = "#fff";
+  container.style.zIndex = "-1";
+  container.style.width = "794px";
   container.appendChild(clone);
   document.body.appendChild(container);
 
-  // PDF
-  console.log("🧠 exportPDFSansClasses appelée");
+  // Export PDF
   await exporterPDF(clone);
-  console.log("✅ exportPDF appelée avec clone");
 
   // Nettoyage
   document.body.removeChild(container);

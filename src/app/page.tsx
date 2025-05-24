@@ -387,7 +387,10 @@ const exporterPDFSansClasses = async () => {
   document.body.appendChild(container);
 
   // PDF
-  await exporterPDF(clone);
+  console.log("🧠 exportPDFSansClasses appelée");
+await exporterPDF(clone);
+console.log("✅ exportPDF appelée avec clone");
+
 
 
   // Nettoyage

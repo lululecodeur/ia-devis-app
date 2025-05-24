@@ -1,4 +1,5 @@
 "use client";
+alert("📄 exporterPDF appelée !");
 
 export const exporterPDF = async (element?: HTMLElement) => {
   const debug = (msg: string) => {
@@ -12,8 +13,10 @@ export const exporterPDF = async (element?: HTMLElement) => {
   debug("📦 html2pdf importé !");
 
   if (!element) {
-    element = document.getElementById("devis-final")!;
-  }
+  alert("❌ Aucun élément transmis à exporterPDF");
+  return;
+}
+
 
   if (!element) {
     alert("❌ Élément #devis-final introuvable !");

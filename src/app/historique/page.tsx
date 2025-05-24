@@ -38,15 +38,15 @@ export default function HistoriquePage() {
   const router = useRouter();
 
   useEffect(() => {
-    const stored = localStorage.getItem("devisHistorique");
-if (stored) {
-  try {
-    const data = JSON.parse(stored);
-    setDevisList(data.reverse()); // 🔁 ordre du plus récent au plus ancien
-  } catch (err) {
-    console.error("Erreur parsing historique :", err);
-  }
-}
+    const stored = localStorage.getItem('devisHistorique');
+    if (stored) {
+      try {
+        const data = JSON.parse(stored);
+        setDevisList(data.reverse()); // 🔁 ordre du plus récent au plus ancien
+      } catch (err) {
+        console.error('Erreur parsing historique :', err);
+      }
+    }
 
     setLoading(false);
   }, []);
@@ -60,7 +60,7 @@ if (stored) {
     const copie = [...devisList];
     copie.splice(index, 1);
     setDevisList(copie);
-    localStorage.setItem("devisHistorique", JSON.stringify(copie));
+    localStorage.setItem('devisHistorique', JSON.stringify(copie));
   };
 
   return (
@@ -106,13 +106,12 @@ if (stored) {
       )}
 
       <div className="sticky bottom-4 z-50 flex justify-center mt-8">
-  <Link href="/?mode=devis">
-    <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm">
-      ← Retour à la création de devis
-    </button>
-  </Link>
-</div>
-
+        <Link href="/?mode=devis">
+          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm">
+            ← Retour à la création de devis
+          </button>
+        </Link>
+      </div>
     </div>
   );
 }

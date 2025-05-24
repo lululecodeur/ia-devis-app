@@ -70,13 +70,6 @@ interface CategorieSauvegardee {
   emoji?: string;
 }
 
-interface LigneGenerique {
-  designation: string;
-  quantite: number;
-  prix: number;
-  unite: string;
-}
-
 // Totaux
 
 const exporterPDFSansClasses = async () => {
@@ -151,7 +144,6 @@ export default function Home() {
     return isNaN(parsed) ? 0 : Math.round(parsed * 100) / 100; // max 2 décimales
   };
   const [signatureClient, setSignatureClient] = useState<string | null>(null);
-  const canvasRef = useRef<SignatureCanvas>(null);
   const [lignesMainOeuvre, setLignesMainOeuvre] = useState<LigneMainOeuvre[]>([]);
   const [lignesPieces, setLignesPieces] = useState<LignePiece[]>([]);
   const [nomMainOeuvre, setNomMainOeuvre] = useState('Main d’œuvre');
@@ -159,13 +151,6 @@ export default function Home() {
   const [categoriesDynamiques, setCategoriesDynamiques] = useState<CategorieDynamique[]>([]);
   const [nouvelleCategorie, setNouvelleCategorie] = useState('');
 
-  const clearSignature = () => canvasRef.current?.clear();
-  const saveSignature = () => {
-    if (canvasRef.current) {
-      const dataURL = canvasRef.current.getTrimmedCanvas().toDataURL('image/png');
-      setSignatureClient(dataURL);
-    }
-  };
   const [signatureEmetteur, setSignatureEmetteur] = useState<string | null>(null);
 
   const [mode, setMode] = useState<'accueil' | 'devis'>('accueil');
@@ -341,8 +326,6 @@ export default function Home() {
   const tva = totalHT * (tvaTaux / 100);
   const totalTTC = totalHT + tva;
   const acompte = totalTTC * (acomptePourcent / 100);
-
-  const boutonActif = lignes.length > 0 && recepteur.nom.trim() !== '';
 
   // Logo upload
   const handleLogoUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -520,46 +503,8 @@ export default function Home() {
   }, [secteurActif]);
 
   // Lignes : ajout, modification, suppression
-  const ajouterLigne = () => {
-    setLignes([...lignes, { designation: '', unite: 'U', quantite: 1, prix: 0 }]);
-  };
-
-  const modifierLigne = (index: number, champ: keyof Ligne, valeur: string | number) => {
-    const copie = [...lignes];
-
-    if (champ === 'quantite' || champ === 'prix') {
-      const parsed = cleanNumericInput(valeur.toString());
-      copie[index][champ] = parsed as never;
-    } else {
-      copie[index][champ] = valeur as never;
-    }
-
-    setLignes(copie);
-  };
-
-  const supprimerLigne = (index: number) => {
-    const copie = [...lignes];
-    copie.splice(index, 1);
-    setLignes(copie);
-  };
 
   // Parsing IA
-  const parseDevisGPT = (texte: string): Ligne[] => {
-    const lignes: Ligne[] = [];
-    const regex = /^\|(.+?)\|(.+?)\|(.+?)\|(.+?)\|(.+?)\|$/gm;
-
-    let match;
-    while ((match = regex.exec(texte)) !== null) {
-      const [_, designation, unite, quantiteStr, prixStr] = match.map(cell => cell.trim());
-      const quantite = parseFloat(quantiteStr.replace(',', '.'));
-      const prix = parseFloat(prixStr.replace(',', '.'));
-      if (!isNaN(quantite) && !isNaN(prix)) {
-        lignes.push({ designation, unite, quantite, prix });
-      }
-    }
-
-    return lignes;
-  };
 
   const parserViaIA = async (texte: string) => {
     try {
@@ -611,27 +556,6 @@ export default function Home() {
       setChargementIA(false);
     }
   };
-
-  function calculerTotalCategorie(cat: CategorieDynamique): number {
-    let total = 0;
-    for (const ligne of cat.lignes) {
-      for (const col of cat.colonnes) {
-        if (col.type === 'prix') {
-          const prix = ligne[col.nom] ?? 0;
-          const quantite = ligne['quantite'] ?? 1;
-          total += prix * quantite;
-        }
-        if (col.type === 'prixAvecMarge') {
-          const achat = ligne[col.nom + '_achat'] ?? 0;
-          const marge = ligne[col.nom + '_marge'] ?? 0;
-          const quantite = ligne['quantite'] ?? 1;
-          const prixFinal = achat * (1 + marge / 100);
-          total += prixFinal * quantite;
-        }
-      }
-    }
-    return total;
-  }
 
   // separation entre home et return
 

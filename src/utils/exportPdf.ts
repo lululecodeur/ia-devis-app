@@ -1,5 +1,4 @@
 "use client";
-alert("📄 exporterPDF appelée !");
 
 export const exporterPDF = async (element?: HTMLElement) => {
   const debug = (msg: string) => {
@@ -7,25 +6,26 @@ export const exporterPDF = async (element?: HTMLElement) => {
     if (div) div.innerHTML += `\n${msg}`;
   };
 
-  alert("📄 Export lancé !");
+  if (typeof window !== "undefined") {
+    alert("📄 Export lancé !");
+  }
+
   debug("📄 Lancement export PDF !");
   const html2pdf = (await import("html2pdf.js")).default;
   debug("📦 html2pdf importé !");
 
   if (!element) {
-  alert("❌ Aucun élément transmis à exporterPDF");
-  return;
-}
-
-
-  if (!element) {
-    alert("❌ Élément #devis-final introuvable !");
-    debug("❌ Élément #devis-final introuvable !");
+    if (typeof window !== "undefined") {
+      alert("❌ Aucun élément transmis à exporterPDF");
+    }
+    debug("❌ Aucun élément transmis à exporterPDF");
     return;
   }
 
   if (element.innerText.trim() === "") {
-    alert("⚠️ Le devis est vide. Veuillez remplir au moins une ligne.");
+    if (typeof window !== "undefined") {
+      alert("⚠️ Le devis est vide. Veuillez remplir au moins une ligne.");
+    }
     debug("⚠️ Le devis est vide.");
     return;
   }
@@ -54,7 +54,9 @@ export const exporterPDF = async (element?: HTMLElement) => {
       .save();
   } catch (err) {
     console.error("❌ Erreur lors de la génération du PDF :", err);
-    alert("❌ Une erreur est survenue lors de la génération du PDF.");
+    if (typeof window !== "undefined") {
+      alert("❌ Une erreur est survenue lors de la génération du PDF.");
+    }
     debug("❌ Erreur : " + err);
   } finally {
     element.style.transform = oldTransform;

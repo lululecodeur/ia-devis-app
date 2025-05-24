@@ -382,15 +382,18 @@ const exporterPDFSansClasses = async () => {
   clone.style.transformOrigin = "top left";
 
   // Nettoyage des styles internes
-  clone.querySelectorAll("*").forEach((el) => {
-    (el as HTMLElement).style.color = "#000";
-    (el as HTMLElement).style.backgroundColor = "#fff";
-    (el as HTMLElement).style.fontFamily = "Arial, sans-serif";
-    (el as HTMLElement).style.fontSize = "14px";
-    (el as HTMLElement).style.lineHeight = "1.5";
-    el.removeAttribute("class");
-    el.removeAttribute("style");
-  });
+clone.querySelectorAll("*").forEach((el) => {
+  el.removeAttribute("class"); // on vire les classes Tailwind (optionnel mais propre)
+  
+  // Applique les styles en dur dans le PDF
+  const element = el as HTMLElement;
+  element.style.color = "#000";
+  element.style.backgroundColor = "#fff";
+  element.style.fontFamily = "Arial, sans-serif";
+  element.style.fontSize = "14px";
+  element.style.lineHeight = "1.5";
+});
+
 
   // Conteneur temporaire
   const container = document.createElement("div");

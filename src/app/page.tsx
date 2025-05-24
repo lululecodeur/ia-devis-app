@@ -411,6 +411,16 @@ console.log("✅ exportPDF appelée avec clone");
 
   return(
 <>
+
+<button
+  onClick={async () => {
+    alert("PDF direct test !");
+    await exporterPDFSansClasses();
+  }}
+>
+  🧪 TEST EXPORT PDF DIRECT
+</button>
+
 {mode === "accueil" && (
   <div className="text-center mt-20">
     <h1 className="text-3xl font-bold mb-4">Bienvenue 👋</h1>
@@ -1234,16 +1244,18 @@ console.log("✅ exportPDF appelée avec clone");
 {/* Bouton fixe en bas à gauche */}
 {mode === "devis" && !showSecteurModal &&(
 <div className="sticky bottom-4 left-4 z-50">
-  <button
+<button
   onClick={async () => {
+    console.log("✅ Bouton cliqué");
+    alert("✅ Début de la fonction onClick !");
+
     try {
-      // 🛑 Vérifie que le client est bien rempli
+      console.log("🪪 Étape 1 : vérif client");
       if (!recepteur.nom.trim() || !recepteur.email.trim()) {
         alert("❌ Merci de renseigner au minimum un nom et un email pour exporter.");
         return;
       }
 
-      // 🔎 Récupère ou génère un client_id unique
       const clientsStr = localStorage.getItem("clients");
       const clients = clientsStr ? JSON.parse(clientsStr) : [];
 
@@ -1253,9 +1265,9 @@ console.log("✅ exportPDF appelée avec clone");
           c.email.trim() === recepteur.email.trim()
       );
 
-      const client_id_final = clientExistant?.client_id || `${recepteur.nom.trim()}-${recepteur.email.trim()}`;
+      const client_id_final =
+        clientExistant?.client_id || `${recepteur.nom.trim()}-${recepteur.email.trim()}`;
 
-      // 🗂 Enregistre le client si pas encore présent
       const nouveauClient = {
         ...recepteur,
         client_id: client_id_final,
@@ -1271,7 +1283,8 @@ console.log("✅ exportPDF appelée avec clone");
         localStorage.setItem("clients", JSON.stringify(clients));
       }
 
-      // 📤 Envoie au backend
+      console.log("📤 Étape 2 : fetch backend");
+
       await fetch("http://localhost:5000/sauvegarder-devis-final", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1297,7 +1310,8 @@ console.log("✅ exportPDF appelée avec clone");
         }),
       });
 
-      // 💾 Sauvegarde dans l'historique local
+      console.log("💾 Étape 3 : sauvegarde localStorage");
+
       const historiqueStr = localStorage.getItem("devisHistorique");
       const historique = historiqueStr ? JSON.parse(historiqueStr) : [];
 
@@ -1326,19 +1340,22 @@ console.log("✅ exportPDF appelée avec clone");
       historique.push(nouveauDevis);
       localStorage.setItem("devisHistorique", JSON.stringify(historique));
 
-      // 📄 Génère le PDF
+      console.log("📄 Étape 4 : appel PDF");
       if (typeof window !== "undefined") alert("📢 Appel exporterPDFSansClasses !");
-console.log("📢 Appel exporterPDFSansClasses !");
-
+      console.log("📢 Appel exporterPDFSansClasses !");
       await exporterPDFSansClasses();
     } catch (e) {
       console.warn("❌ Erreur complète lors de l’export :", e);
+      if (typeof window !== "undefined") {
+        alert("❌ Une erreur est survenue pendant l’export.");
+      }
     }
   }}
   className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-3 rounded-xl shadow flex items-center justify-center gap-2"
 >
   📄 Exporter le devis
 </button>
+
 </div>
 )}
 

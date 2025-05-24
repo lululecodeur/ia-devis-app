@@ -72,7 +72,38 @@ const saveSignature = () => {
 const [signatureEmetteur, setSignatureEmetteur] = useState<string | null>(null);
 
 const [mode, setMode] = useState<"accueil" | "devis">("accueil");
+
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const modeParam = params.get("mode");
+
+  if (modeParam === "devis") {
+    setMode("devis");
+
+    const temp = localStorage.getItem("clientTemp");
+    if (temp) {
+      try {
+        const client = JSON.parse(temp);
+        setRecepteur(client);
+        setClientTempLoaded(true);
+        localStorage.removeItem("clientTemp");
+      } catch (e) {
+        console.error("Erreur lecture clientTemp :", e);
+      }
+    }
+  }
+}, []);
+
+
 const [deviceScale, setDeviceScale] = useState(1);
+const [hasHydratedFromDevis, setHasHydratedFromDevis] = useState(false);
+const [canSaveEmetteur, setCanSaveEmetteur] = useState(false);
+const clientId = `${recepteur.nom}-${recepteur.email}`; // identifiant unique simple
+const [clientTempLoaded, setClientTempLoaded] = useState(false);
+
+
+
+
 
 
 
@@ -83,22 +114,31 @@ useEffect(() => {
   }
 }, []);
 
-  
+
+
 
 
 
 
   // Sauvegarde localStorage : logo et émetteur
-  useEffect(() => {
-    const emetteurSauvegarde = localStorage.getItem("emetteur");
-    const logoSauvegarde = localStorage.getItem("logo");
-    if (emetteurSauvegarde) setEmetteur(JSON.parse(emetteurSauvegarde));
-    if (logoSauvegarde) setLogo(logoSauvegarde);
-  }, []);
+useEffect(() => {
+  const encoreUnDevis = localStorage.getItem("devisEnCours");
+  if (encoreUnDevis) return; // 🛑 on ne fait rien si un devis est présent
 
-  useEffect(() => {
+  const emetteurSauvegarde = localStorage.getItem("emetteur");
+  const logoSauvegarde = localStorage.getItem("logo");
+
+  if (emetteurSauvegarde) setEmetteur(JSON.parse(emetteurSauvegarde));
+  if (logoSauvegarde) setLogo(logoSauvegarde);
+}, []);
+
+
+useEffect(() => {
+  if (canSaveEmetteur) {
     localStorage.setItem("emetteur", JSON.stringify(emetteur));
-  }, [emetteur]);
+  }
+}, [emetteur, canSaveEmetteur]);
+
 
   useEffect(() => {
     if (logo) localStorage.setItem("logo", logo);
@@ -156,6 +196,32 @@ useEffect(() => {
   // Charger les secteurs sauvegardés
 
 
+useEffect(() => {
+  const saved = localStorage.getItem('devisEnCours');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      setTitre(data.titre || "");
+      setLignes(data.lignes || []);
+      setIntro(data.intro || "");
+      setConclusion(data.conclusion || "");
+      setMentions(data.mentions || "");
+      setLogo(data.logo || null);
+      setEmetteur(data.emetteur || { nom: "", adresse: "", siret: "", email: "", tel: "" });
+      setTvaTaux(data.tva_taux || 20);
+      setRemisePourcent(data.remise_pourcent || 0);
+      setAcomptePourcent(data.acompte_pourcent || 30);
+      setRecepteur({ nom: "", adresse: "", email: "", tel: "" });
+      setHasHydratedFromDevis(true);
+      localStorage.removeItem("devisEnCours");
+           setCanSaveEmetteur(true); // autorise la sauvegarde ensuite
+    } catch (err) {
+      console.error("Erreur lors de la lecture du devis à réutiliser :", err);
+    }
+  } else {
+    setHasHydratedFromDevis(true); // même s'il n'y a rien, on le signale
+  }
+}, []);
 
 
 
@@ -661,6 +727,48 @@ const exporterPDFSansClasses = async () => {
       onChange={(e) => setRecepteur({ ...recepteur, tel: e.target.value })}
     />
   </div>
+<button
+  onClick={() => {
+    try {
+      const clientsStr = localStorage.getItem("clients");
+      const clients = clientsStr ? JSON.parse(clientsStr) : [];
+
+      const nouveauClient = {
+        ...recepteur,
+        date: new Date().toISOString(),
+      };
+
+      const existeDeja = clients.some(
+        (c: any) => c.nom === nouveauClient.nom && c.email === nouveauClient.email
+      );
+
+      if (!existeDeja) {
+        clients.push(nouveauClient);
+        localStorage.setItem("clients", JSON.stringify(clients));
+        alert("✅ Infos client enregistrées !");
+      } else {
+        alert("ℹ️ Client déjà enregistré.");
+      }
+    } catch (e) {
+      console.warn("❌ Erreur lors de la sauvegarde :", e);
+      alert("Erreur lors de l'enregistrement du client.");
+    }
+  }}
+  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm w-full mb-2"
+>
+  💾 Enregistrer les infos client
+</button>
+
+ <button
+  onClick={() => {
+    window.location.href = "/clients";
+  }}
+  className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded text-sm w-full"
+>
+  📁 Voir les infos client enregistrées
+</button>
+
+
 </Card>
 </div>
   
@@ -1091,6 +1199,28 @@ const exporterPDFSansClasses = async () => {
 <div className="sticky bottom-4 left-4 z-50">
   <button
     onClick={async () => {
+      // Sauvegarde client auto lors de l’export
+try {
+  const clientsStr = localStorage.getItem("clients");
+  const clients = clientsStr ? JSON.parse(clientsStr) : [];
+
+  const nouveauClient = {
+    ...recepteur,
+    date: new Date().toISOString(),
+  };
+
+  const existeDeja = clients.some(
+    (c: any) => c.nom === nouveauClient.nom && c.email === nouveauClient.email
+  );
+
+  if (!existeDeja) {
+    clients.push(nouveauClient);
+    localStorage.setItem("clients", JSON.stringify(clients));
+  }
+} catch (e) {
+  console.warn("❌ Erreur lors de la sauvegarde client automatique :", e);
+}
+
       await fetch("http://localhost:5000/sauvegarder-devis-final", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1112,6 +1242,7 @@ const exporterPDFSansClasses = async () => {
           emetteur,
           recepteur,
           logo,
+          client_id: clientId,
         }),
       });
       await exporterPDFSansClasses();
@@ -1131,6 +1262,28 @@ const exporterPDFSansClasses = async () => {
   <div className="flex flex-col gap-4">
   <button
     onClick={async () => {
+      // Sauvegarde client auto lors de l’export
+try {
+  const clientsStr = localStorage.getItem("clients");
+  const clients = clientsStr ? JSON.parse(clientsStr) : [];
+
+  const nouveauClient = {
+    ...recepteur,
+    date: new Date().toISOString(),
+  };
+
+  const existeDeja = clients.some(
+    (c: any) => c.nom === nouveauClient.nom && c.email === nouveauClient.email
+  );
+
+  if (!existeDeja) {
+    clients.push(nouveauClient);
+    localStorage.setItem("clients", JSON.stringify(clients));
+  }
+} catch (e) {
+  console.warn("❌ Erreur lors de la sauvegarde client automatique :", e);
+}
+
       await fetch("http://localhost:5000/sauvegarder-devis-final", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -52,9 +52,10 @@ export default function HistoriquePage() {
   }, []);
 
   const reutiliserDevis = (devis: Devis) => {
-    localStorage.setItem('devisEnCours', JSON.stringify(devis));
-    router.push('/');
-  };
+  localStorage.setItem('devisEnCours', JSON.stringify(devis));
+  router.push('/?mode=devis'); // 👈 redirige vers mode "devis"
+};
+
 
   return (
     <div className="max-w-4xl mx-auto p-8">

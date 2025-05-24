@@ -13,17 +13,34 @@ interface CategorieDynamique {
   colonnes: ColonneCategorie[];
   lignes: LigneCustom[];
   afficher: boolean;
+  emoji?: string;
 }
 
 export default function BlocCategorie({
   categorie,
   onUpdate,
   onDelete,
+  onSaveCategorie, // ✅ ajout ici
 }: {
   categorie: CategorieDynamique;
   onUpdate: (updated: CategorieDynamique) => void;
   onDelete: () => void;
+  onSaveCategorie?: (cat: {
+    nom: string;
+    colonnes: ColonneCategorie[];
+    lignes?: LigneCustom[]; // ✅ ajout ici
+    emoji?: string;
+  }) => void;
 }) {
+  const cleanNumericInput = (val: string): number => {
+    const clean = val.replace(/^0+(\d)/, '$1');
+    const parsed = parseFloat(clean);
+    return isNaN(parsed) ? 0 : Math.round(parsed * 100) / 100;
+  };
+
+  const afficherNettoye = (val: any): string =>
+    val !== undefined ? String(cleanNumericInput(String(val))) : '';
+
   const ajouterLigne = () => {
     const nouvelleLigne: LigneCustom = {};
     categorie.colonnes.forEach(col => {
@@ -43,9 +60,28 @@ export default function BlocCategorie({
     onUpdate({ ...categorie, lignes });
   };
 
+  const sauvegarderCategorie = () => {
+    const { nom, colonnes, emoji, lignes } = categorie;
+
+    if (!nom || colonnes.length === 0) {
+      alert('❌ Le nom ou les colonnes sont vides.');
+      return;
+    }
+
+    const lignesCopy = [...lignes]; // snapshot local
+
+    if (onSaveCategorie) {
+      onSaveCategorie({
+        nom,
+        colonnes,
+        lignes: lignesCopy,
+        emoji,
+      });
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-4">
-      {/* Titre modifiable */}
+    <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between">
         <input
           type="text"
@@ -58,15 +94,11 @@ export default function BlocCategorie({
         </button>
       </div>
 
-      {/* Tableau dynamique */}
       <div className="overflow-x-auto">
-        {/* 🔧 Configuration des colonnes */}
         <div className="flex flex-col gap-4 mt-4">
           <h4 className="text-sm font-medium text-gray-800">Colonnes de la catégorie</h4>
-
           {categorie.colonnes.map((col, idx) => (
             <div key={idx} className="flex gap-2 items-center">
-              {/* Nom de la colonne */}
               <input
                 type="text"
                 value={col.nom}
@@ -86,8 +118,6 @@ export default function BlocCategorie({
                     : 'ex : désignation'
                 }
               />
-
-              {/* Type de champ */}
               <select
                 value={col.type}
                 onChange={e => {
@@ -102,8 +132,6 @@ export default function BlocCategorie({
                 <option value="prix">Prix</option>
                 <option value="prixAvecMarge">Prix avec marge</option>
               </select>
-
-              {/* Bouton supprimer */}
               <button
                 onClick={() => {
                   const colonnes = [...categorie.colonnes];
@@ -111,14 +139,11 @@ export default function BlocCategorie({
                   onUpdate({ ...categorie, colonnes });
                 }}
                 className="text-red-600 hover:text-red-800 text-lg"
-                title="Supprimer cette colonne"
               >
                 🗑️
               </button>
             </div>
           ))}
-
-          {/* Ajouter une nouvelle colonne */}
           <button
             onClick={() =>
               onUpdate({
@@ -128,11 +153,11 @@ export default function BlocCategorie({
             }
             className="text-sm text-blue-600 hover:text-blue-800 underline w-fit"
           >
-            ➕ Ajouter une colonne
+            ➕ Ajouter une colonne au tableau (aperçu ci-dessous)
           </button>
         </div>
 
-        <table className="w-full text-sm border-separate border-spacing-y-2">
+        <table className="w-full text-sm border-separate border-spacing-y-2 mt-4">
           <thead>
             <tr className="text-left text-xs uppercase text-gray-600 tracking-wider">
               {categorie.colonnes.map((col, idx) => (
@@ -159,10 +184,11 @@ export default function BlocCategorie({
                               <label className="text-[10px] text-gray-500 mb-1">€ achat</label>
                               <input
                                 type="number"
-                                value={ligne[cle + '_achat'] ?? ''}
+                                onWheel={e => e.currentTarget.blur()}
+                                value={afficherNettoye(ligne[cle + '_achat'])}
                                 onChange={e => {
                                   const lignes = [...categorie.lignes];
-                                  lignes[index][cle + '_achat'] = parseFloat(e.target.value) || 0;
+                                  lignes[index][cle + '_achat'] = cleanNumericInput(e.target.value);
                                   onUpdate({ ...categorie, lignes });
                                 }}
                                 className="w-full bg-transparent text-sm border border-gray-200 rounded px-2"
@@ -172,10 +198,11 @@ export default function BlocCategorie({
                               <label className="text-[10px] text-gray-500 mb-1">% marge</label>
                               <input
                                 type="number"
-                                value={ligne[cle + '_marge'] ?? ''}
+                                onWheel={e => e.currentTarget.blur()}
+                                value={afficherNettoye(ligne[cle + '_marge'])}
                                 onChange={e => {
                                   const lignes = [...categorie.lignes];
-                                  lignes[index][cle + '_marge'] = parseFloat(e.target.value) || 0;
+                                  lignes[index][cle + '_marge'] = cleanNumericInput(e.target.value);
                                   onUpdate({ ...categorie, lignes });
                                 }}
                                 className="w-full bg-transparent text-sm border border-gray-200 rounded px-2"
@@ -194,11 +221,16 @@ export default function BlocCategorie({
                     <td key={colIndex} className="px-3 py-2">
                       <input
                         type={col.type === 'texte' ? 'text' : 'number'}
-                        value={ligne[cle] ?? ''}
+                        onWheel={e => e.currentTarget.blur()}
+                        value={
+                          col.type === 'texte' ? ligne[cle] ?? '' : afficherNettoye(ligne[cle])
+                        }
                         onChange={e => {
                           const lignes = [...categorie.lignes];
                           lignes[index][cle] =
-                            col.type === 'texte' ? e.target.value : parseFloat(e.target.value) || 0;
+                            col.type === 'texte'
+                              ? e.target.value
+                              : cleanNumericInput(e.target.value);
                           onUpdate({ ...categorie, lignes });
                         }}
                         className="w-full bg-transparent text-sm border border-gray-200 rounded px-2"
@@ -206,7 +238,6 @@ export default function BlocCategorie({
                     </td>
                   );
                 })}
-
                 <td className="px-3 py-2 text-center">
                   <button
                     onClick={() => supprimerLigne(index)}
@@ -221,7 +252,6 @@ export default function BlocCategorie({
         </table>
       </div>
 
-      {/* Ajouter une ligne */}
       <button
         onClick={ajouterLigne}
         className="bg-white hover:bg-gray-100 text-sm text-gray-800 px-4 py-2 rounded-md border border-gray-300 shadow-sm w-fit"
@@ -229,7 +259,6 @@ export default function BlocCategorie({
         ➕ Ajouter une ligne
       </button>
 
-      {/* Affichage dans le PDF */}
       <div className="flex items-center gap-4 mt-4">
         <span className="text-sm font-medium text-gray-700">Afficher dans le PDF</span>
         <label className="relative inline-flex items-center cursor-pointer">

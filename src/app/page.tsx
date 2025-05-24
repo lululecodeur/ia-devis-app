@@ -63,6 +63,13 @@ interface CategorieDynamique {
   emoji?: string;
 }
 
+interface CategorieSauvegardee {
+  nom: string;
+  colonnes: ColonneCategorie[];
+  lignes?: LigneCustom[];
+  emoji?: string;
+}
+
 interface LigneGenerique {
   designation: string;
   quantite: number;
@@ -174,6 +181,7 @@ export default function Home() {
   const [typeColonne, setTypeColonne] = useState<'texte' | 'quantite' | 'prix' | 'prixAvecMarge'>(
     'texte'
   );
+  const [categoriesSauvegardees, setCategoriesSauvegardees] = useState<CategorieSauvegardee[]>([]);
 
   if (lignesMainOeuvre.length > 0) {
     lignesPourPDF.push({
@@ -202,6 +210,31 @@ export default function Home() {
       });
     });
   }
+  useEffect(() => {
+    const secteursSauvegardes = localStorage.getItem('secteurs');
+    const secteurActifSauvegarde = localStorage.getItem('secteurActif');
+
+    if (secteursSauvegardes) {
+      try {
+        const parsed = JSON.parse(secteursSauvegardes);
+        if (Array.isArray(parsed)) {
+          setSecteurs(parsed);
+
+          if (secteurActifSauvegarde && parsed.includes(secteurActifSauvegarde)) {
+            setSecteurActif(secteurActifSauvegarde);
+            setMode('devis');
+            setShowSecteurModal(false);
+          } else if (parsed.length > 0) {
+            setSecteurActif(parsed[0]);
+            setMode('devis');
+            setShowSecteurModal(false);
+          }
+        }
+      } catch (e) {
+        console.error('Erreur lecture secteurs sauvegardés', e);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -236,6 +269,14 @@ export default function Home() {
         localStorage.removeItem('client_id_temp');
       }
     }
+  }, []);
+
+  useEffect(() => {
+    const nomPiecesSauvegarde = localStorage.getItem('nomPieces');
+    if (nomPiecesSauvegarde) setNomPieces(nomPiecesSauvegarde);
+
+    const nomMainOeuvreSauvegarde = localStorage.getItem('nomMainOeuvre');
+    if (nomMainOeuvreSauvegarde) setNomMainOeuvre(nomMainOeuvreSauvegarde);
   }, []);
 
   const [deviceScale, setDeviceScale] = useState(1);
@@ -312,12 +353,39 @@ export default function Home() {
       reader.readAsDataURL(file);
     }
   };
+  useEffect(() => {
+    const secteursSauvegardes = localStorage.getItem('secteurs');
+    if (secteursSauvegardes) {
+      try {
+        const parsed = JSON.parse(secteursSauvegardes);
+        if (Array.isArray(parsed)) {
+          setSecteurs(parsed);
+
+          const secteurSauvegarde = localStorage.getItem('secteurActif');
+          if (secteurSauvegarde && parsed.includes(secteurSauvegarde)) {
+            setSecteurActif(secteurSauvegarde);
+            setShowSecteurModal(false);
+            setMode('devis'); // ✅ IMPORTANT
+          } else if (parsed.length > 0) {
+            setSecteurActif(parsed[0]);
+            setShowSecteurModal(false);
+            setMode('devis'); // ✅ AUSSI ICI
+          }
+        }
+      } catch (e) {
+        console.error('Erreur lecture secteurs sauvegardés', e);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setDeviceScale(1 / window.devicePixelRatio);
     }
   }, []);
+  useEffect(() => {
+    localStorage.setItem('secteurs', JSON.stringify(secteurs));
+  }, [secteurs]);
 
   // Sauvegarde localStorage : logo et émetteur
   useEffect(() => {
@@ -359,12 +427,30 @@ export default function Home() {
   }, [secteurActif]);
 
   useEffect(() => {
-    const secteurSauvegarde = localStorage.getItem('secteurActif');
-    if (secteurSauvegarde) {
-      setSecteurActif(secteurSauvegarde);
-      setShowSecteurModal(false);
+    if (secteurActif) {
+      const val = localStorage.getItem(`nomMainOeuvre_${secteurActif}`);
+      if (val) setNomMainOeuvre(val);
     }
-  }, []);
+  }, [secteurActif]);
+
+  useEffect(() => {
+    if (secteurActif) {
+      const val = localStorage.getItem(`nomPieces_${secteurActif}`);
+      if (val) setNomPieces(val);
+    }
+  }, [secteurActif]);
+
+  useEffect(() => {
+    if (secteurActif) {
+      localStorage.setItem(`nomMainOeuvre_${secteurActif}`, nomMainOeuvre);
+    }
+  }, [nomMainOeuvre, secteurActif]);
+
+  useEffect(() => {
+    if (secteurActif) {
+      localStorage.setItem(`nomPieces_${secteurActif}`, nomPieces);
+    }
+  }, [nomPieces, secteurActif]);
 
   useEffect(() => {
     if (secteurActif) {
@@ -418,6 +504,20 @@ export default function Home() {
       setHasHydratedFromDevis(true); // même s'il n'y a rien, on le signale
     }
   }, []);
+  useEffect(() => {
+    const saved = localStorage.getItem('categoriesSauvegardees');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setCategoriesSauvegardees(parsed);
+      } catch {}
+    }
+  }, []);
+  useEffect(() => {
+    if (secteurActif) {
+      localStorage.setItem('secteurActif', secteurActif);
+    }
+  }, [secteurActif]);
 
   // Lignes : ajout, modification, suppression
   const ajouterLigne = () => {
@@ -583,8 +683,9 @@ export default function Home() {
                           if (propre && !secteurs.includes(propre)) {
                             const updated = [...secteurs, propre];
                             setSecteurs(updated);
-                            setSecteurActif('');
+                            setSecteurActif(propre); // ✅ garder le dernier choisi
                             localStorage.setItem('secteurs', JSON.stringify(updated));
+                            localStorage.setItem('secteurActif', propre); // ✅ fix
                           }
                         }}
                         className="bg-blue-600 text-white px-4 py-2 rounded mb-4 hover:bg-blue-700 w-full"
@@ -632,19 +733,34 @@ export default function Home() {
                         disabled={secteurs.length === 0 && secteurActif.trim() === ''}
                         onClick={() => {
                           const propre = secteurActif.trim();
-                          if (propre && !secteurs.includes(propre)) {
-                            const updated = [...secteurs, propre];
-                            setSecteurs(updated);
-                            setSecteurActif(propre);
-                            localStorage.setItem('secteurs', JSON.stringify(updated));
+                          let secteurFinal = propre;
+
+                          // Si rien dans le champ mais une liste existe, on prend le premier
+                          if (!secteurFinal && secteurs.length > 0) {
+                            secteurFinal = secteurs[0];
                           }
-                          setShowSecteurModal(false);
-                          setMode('devis'); // ✅ ici
+
+                          if (secteurFinal) {
+                            // Si nouveau, on l’ajoute
+                            if (!secteurs.includes(secteurFinal)) {
+                              const updated = [...secteurs, secteurFinal];
+                              setSecteurs(updated);
+                              localStorage.setItem('secteurs', JSON.stringify(updated));
+                            }
+
+                            setSecteurActif(secteurFinal);
+                            localStorage.setItem('secteurActif', secteurFinal);
+                            setMode('devis');
+                            setShowSecteurModal(false);
+                          } else {
+                            alert('❌ Merci de renseigner un métier valide.');
+                          }
                         }}
                         className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50 w-full"
                       >
                         ✅ Valider et continuer
                       </button>
+
                       <p className="text-sm text-gray-500 mb-2">
                         🛠️ Vous pourrez modifier ou supprimer vos métiers à tout moment.
                       </p>
@@ -1083,6 +1199,13 @@ export default function Home() {
                     <div className="flex flex-col gap-6">
                       {/* 🟩 Bloc classique : main d'œuvre + pièces */}
                       <Card title="📁 Détail des prestations">
+                        <p className="text-sm text-gray-500 mb-2">
+                          👷 Vous pouvez adapter le nom de cette catégorie selon votre activité : «
+                          main d’œuvre », « prestation », « services », etc en appuyant bien sur
+                          Entrée à la fin de la saisie. Cette modification sera enregistrée pour vos
+                          prochains devis. Si vous n'en avez pas besoin, décocher "Afficher dans le
+                          pdf".
+                        </p>
                         <BlocMainOeuvre
                           lignes={lignesMainOeuvre}
                           setLignes={setLignesMainOeuvre}
@@ -1092,6 +1215,15 @@ export default function Home() {
                           setNomCategorie={setNomMainOeuvre}
                         />
 
+                        {/* Trait de séparation entre main d'œuvre et pièces */}
+                        <div className="w-full h-[1px] bg-gray-300 my-6" />
+                        <p className="text-sm text-gray-500 mb-2">
+                          🧰 Vous pouvez personnaliser le nom de chaque catégorie selon votre métier
+                          : « pièces », « matériaux », « fournitures »… en appuyant bien sur Entrée
+                          à la fin de la saisie. Cette modification sera enregistrée pour vos
+                          prochains devis. Si vous n'en avez pas besoin, décocher "Afficher dans le
+                          pdf".
+                        </p>
                         <BlocPieces
                           lignes={lignesPieces}
                           setLignes={setLignesPieces}
@@ -1105,20 +1237,75 @@ export default function Home() {
                       {/* 🟦 Bloc séparé : catégories dynamiques */}
                       <Card title="📦 Catégories personnalisées">
                         {categoriesDynamiques.map((cat, index) => (
-                          <BlocCategorie
-                            key={index}
-                            categorie={cat}
-                            onUpdate={updatedCat => {
-                              const copie = [...categoriesDynamiques];
-                              copie[index] = updatedCat;
-                              setCategoriesDynamiques(copie);
-                            }}
-                            onDelete={() => {
-                              const copie = [...categoriesDynamiques];
-                              copie.splice(index, 1);
-                              setCategoriesDynamiques(copie);
-                            }}
-                          />
+                          <div key={index}>
+                            <BlocCategorie
+                              categorie={cat}
+                              onUpdate={updatedCat => {
+                                const copie = [...categoriesDynamiques];
+                                copie[index] = updatedCat;
+                                setCategoriesDynamiques(copie);
+                              }}
+                              onDelete={() => {
+                                const copie = [...categoriesDynamiques];
+                                copie.splice(index, 1);
+                                setCategoriesDynamiques(copie);
+                              }}
+                            />
+
+                            {/* ✅ Bouton de sauvegarde déporté ici */}
+                            <button
+                              className="text-sm text-blue-600 hover:text-blue-800 underline mt-2"
+                              onClick={() => {
+                                const cat = categoriesDynamiques[index];
+
+                                if (!cat.nom || cat.colonnes.length === 0) {
+                                  alert('❌ Le nom ou les colonnes sont vides.');
+                                  return;
+                                }
+
+                                const copie = [...categoriesSauvegardees];
+                                const indexExistante = copie.findIndex(c => c.nom === cat.nom);
+
+                                if (indexExistante !== -1) {
+                                  const confirmer = window.confirm(
+                                    `🔁 Une catégorie « ${cat.nom} » existe déjà.
+Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela écrasera l’ancienne version) ?`
+                                  );
+                                  if (!confirmer) return;
+
+                                  copie[indexExistante] = {
+                                    nom: cat.nom,
+                                    colonnes: [...cat.colonnes],
+                                    lignes: [...cat.lignes],
+                                    emoji: cat.emoji,
+                                  };
+                                } else {
+                                  copie.push({
+                                    nom: cat.nom,
+                                    colonnes: [...cat.colonnes],
+                                    lignes: [...cat.lignes],
+                                    emoji: cat.emoji,
+                                  });
+                                }
+
+                                setCategoriesSauvegardees(copie);
+                                localStorage.setItem(
+                                  'categoriesSauvegardees',
+                                  JSON.stringify(copie)
+                                );
+                                alert('✅ Catégorie enregistrée.');
+                              }}
+                            >
+                              💾 Sauvegarder cette catégorie et ces prestations
+                            </button>
+
+                            {/* Trait de séparation sauf après la dernière */}
+                            {index < categoriesDynamiques.length - 1 && (
+                              <div className="flex justify-center">
+                                <div className="h-1 w-3/4 bg-gray-300 my-10 rounded-full" />
+                              </div>
+                            )}
+                          </div>
                         ))}
 
                         {/* Ajout d'une nouvelle catégorie */}
@@ -1163,6 +1350,67 @@ export default function Home() {
                             Les colonnes par défaut seront : designation (texte), quantite
                             (numérique) et prix (avec marge).
                           </p>
+                        </div>
+                      </Card>
+
+                      <Card title="📂 Catégories enregistrées">
+                        {categoriesSauvegardees.length === 0 && (
+                          <p className="text-sm text-gray-500">
+                            Aucune catégorie enregistrée pour l'instant.
+                          </p>
+                        )}
+                        <div className="flex flex-col gap-2">
+                          {categoriesSauvegardees.map((cat, index) => (
+                            <div
+                              key={index}
+                              className="flex justify-between items-center border border-gray-300 bg-white shadow-sm p-3 rounded-lg"
+                            >
+                              <span>
+                                {cat.emoji} {cat.nom}
+                              </span>
+                              <div className="flex gap-2">
+                                <button
+                                  className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                                  onClick={() =>
+                                    setCategoriesDynamiques([
+                                      ...categoriesDynamiques,
+                                      {
+                                        nom: cat.nom,
+                                        colonnes: [...cat.colonnes],
+                                        lignes: cat.lignes ? cat.lignes.map(l => ({ ...l })) : [],
+                                        afficher: true,
+                                        emoji: cat.emoji,
+                                      },
+                                    ])
+                                  }
+                                >
+                                  ➕ Ajouter
+                                </button>
+
+                                {/* ✅ BOUTON SUPPRIMER */}
+                                <button
+                                  className="text-sm bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                                  onClick={() => {
+                                    const confirmer = window.confirm(
+                                      `❌ Supprimer la catégorie "${cat.nom}" ?`
+                                    );
+                                    if (!confirmer) return;
+
+                                    const copie = [...categoriesSauvegardees];
+                                    copie.splice(index, 1);
+                                    setCategoriesSauvegardees(copie);
+                                    localStorage.setItem(
+                                      'categoriesSauvegardees',
+                                      JSON.stringify(copie)
+                                    );
+                                    alert('🗑️ Catégorie supprimée.');
+                                  }}
+                                >
+                                  ❌
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </Card>
                     </div>
@@ -1512,6 +1760,7 @@ export default function Home() {
                               logo,
                               client_id: client_id_final,
                               date: new Date().toISOString(),
+                              numeroDevis,
                             };
 
                             historique.push(nouveauDevis);
@@ -1701,8 +1950,14 @@ export default function Home() {
                         }}
                       />
                     )}
-                    <div style={{ color: '#666', fontSize: '12px' }}>
+                    <div style={{ color: '#666', fontSize: '12px', textAlign: 'right' }}>
                       {new Date().toLocaleDateString('fr-FR')}
+                      <br />
+                      {numeroDevis && (
+                        <span style={{ fontWeight: 'bold', color: '#333' }}>
+                          Devis n° {numeroDevis}
+                        </span>
+                      )}
                     </div>
                   </div>
 

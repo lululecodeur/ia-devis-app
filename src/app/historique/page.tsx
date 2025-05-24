@@ -23,6 +23,7 @@ interface InfoEntreprise {
 interface Devis {
   date: string;
   titre: string;
+  numeroDevis?: string; // ✅ Ajout
   lignes: Ligne[];
   intro?: string;
   conclusion?: string;
@@ -77,7 +78,14 @@ export default function HistoriquePage() {
             <li key={index} className="border rounded p-4 shadow-sm bg-white">
               <div className="flex justify-between items-center">
                 <div>
-                  <h2 className="font-semibold">{devis.titre}</h2>
+                  <h2 className="font-semibold">
+                    {devis.titre}
+                    {devis.numeroDevis && (
+                      <span className="ml-2 text-sm text-gray-600 font-normal">
+                        (n° {devis.numeroDevis})
+                      </span>
+                    )}
+                  </h2>
                   <p className="text-sm text-gray-500">
                     {new Date(devis.date).toLocaleString('fr-FR')}
                   </p>

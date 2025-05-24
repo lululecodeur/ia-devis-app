@@ -86,6 +86,7 @@ export default function BlocPieces({
               <th className="px-3 py-2 bg-gray-100">% Marge</th>
               <th className="px-3 py-2 bg-gray-100">Quantité</th>
               <th className="px-3 py-2 bg-gray-100">Mode</th>
+              <th className="px-3 py-2 bg-gray-100">Prix fixe (€)</th>
               <th className="px-3 py-2 bg-gray-100 rounded-r-lg text-center">🗑️</th>
             </tr>
           </thead>
@@ -103,18 +104,24 @@ export default function BlocPieces({
                 <td className="px-3 py-2">
                   <input
                     type="text"
-                    className="w-full bg-transparent text-sm"
+                    className={`w-full bg-transparent text-sm ${
+                      ligne.mode === 'manuel' ? 'text-gray-400' : ''
+                    }`}
                     value={formatNombre(ligne.prixAchat)}
                     onChange={e => modifierLigne(index, 'prixAchat', e.target.value)}
+                    disabled={ligne.mode === 'manuel'}
                     placeholder="0"
                   />
                 </td>
                 <td className="px-3 py-2">
                   <input
                     type="text"
-                    className="w-full bg-transparent text-sm"
+                    className={`w-full bg-transparent text-sm ${
+                      ligne.mode === 'manuel' ? 'text-gray-400' : ''
+                    }`}
                     value={formatNombre(ligne.margePourcent)}
                     onChange={e => modifierLigne(index, 'margePourcent', e.target.value)}
+                    disabled={ligne.mode === 'manuel'}
                     placeholder="0"
                   />
                 </td>
@@ -128,14 +135,42 @@ export default function BlocPieces({
                   />
                 </td>
                 <td className="px-3 py-2">
-                  <select
-                    className="w-full bg-transparent text-sm"
-                    value={ligne.mode}
-                    onChange={e => modifierLigne(index, 'mode', e.target.value)}
-                  >
-                    <option value="calculé">Calculé</option>
-                    <option value="manuel">Manuel</option>
-                  </select>
+                  <div className="inline-flex rounded-md border border-gray-300 overflow-hidden text-sm w-full">
+                    <button
+                      type="button"
+                      onClick={() => modifierLigne(index, 'mode', 'calculé')}
+                      className={`w-1/2 px-3 py-1 transition-colors ${
+                        ligne.mode === 'calculé'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      Prix avec marge
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => modifierLigne(index, 'mode', 'manuel')}
+                      className={`w-1/2 px-3 py-1 transition-colors ${
+                        ligne.mode === 'manuel'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      Prix fixe
+                    </button>
+                  </div>
+                </td>
+                <td className="px-3 py-2">
+                  <input
+                    type="text"
+                    className={`w-full bg-transparent text-sm ${
+                      ligne.mode === 'calculé' ? 'text-gray-400' : ''
+                    }`}
+                    value={formatNombre(ligne.prixManuel || 0)}
+                    onChange={e => modifierLigne(index, 'prixManuel', e.target.value)}
+                    disabled={ligne.mode === 'calculé'}
+                    placeholder="0"
+                  />
                 </td>
                 <td className="px-3 py-2 text-center">
                   <button

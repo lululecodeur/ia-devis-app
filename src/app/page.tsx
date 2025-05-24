@@ -362,6 +362,11 @@ const parserViaIA = async (texte: string) => {
 
 
 const exporterPDFSansClasses = async () => {
+  console.log("🧠 exporterPDFSansClasses START");
+if (typeof window !== "undefined") {
+  alert("🧠 exporterPDFSansClasses START");
+}
+
   const devis = document.getElementById("devis-final");
   if (!devis) return;
 
@@ -1322,6 +1327,9 @@ console.log("✅ exportPDF appelée avec clone");
       localStorage.setItem("devisHistorique", JSON.stringify(historique));
 
       // 📄 Génère le PDF
+      if (typeof window !== "undefined") alert("📢 Appel exporterPDFSansClasses !");
+console.log("📢 Appel exporterPDFSansClasses !");
+
       await exporterPDFSansClasses();
     } catch (e) {
       console.warn("❌ Erreur complète lors de l’export :", e);

@@ -8,8 +8,7 @@ import type SignatureCanvas from 'react-signature-canvas';
 import BlocMainOeuvre from '@/components/BlocMainOeuvre';
 import BlocPieces from '@/components/BlocPieces';
 import Link from 'next/link';
-import RenduPDF from '@/components/pdf/RenduPDF';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { createRoot } from 'react-dom/client'; // ✅ à importer une seule fois
 
 // Types
 
@@ -46,6 +45,42 @@ interface LignePiece {
   prixManuel?: number;
   mode: 'calculé' | 'manuel';
 }
+
+// Totaux
+
+const exporterPDFSansClasses = async () => {
+  const devis = document.getElementById('devis-final');
+  if (!devis) {
+    console.warn('❌ Élément #devis-final introuvable.');
+    return;
+  }
+
+  const clone = devis.cloneNode(true) as HTMLElement;
+  clone.style.width = '794px';
+  clone.style.minHeight = '1123px';
+  clone.style.padding = '32px';
+  clone.style.margin = '0 auto';
+  clone.style.backgroundColor = '#ffffff';
+  clone.style.fontFamily = 'Arial, sans-serif';
+  clone.style.fontSize = '14px';
+  clone.style.lineHeight = '1.5';
+  clone.style.transform = 'none';
+  clone.style.transformOrigin = 'top left';
+
+  clone.querySelectorAll('*').forEach(el => el.removeAttribute('class'));
+
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.top = '-9999px';
+  container.style.left = '0';
+  container.style.zIndex = '-1';
+  container.style.width = '794px';
+  container.appendChild(clone);
+  document.body.appendChild(container);
+
+  await exporterPDF(clone);
+  document.body.removeChild(container);
+};
 
 export default function Home() {
   // État général
@@ -168,6 +203,47 @@ export default function Home() {
   const [canSaveEmetteur, setCanSaveEmetteur] = useState(false);
   const [clientTempLoaded, setClientTempLoaded] = useState(false);
   const [clientId, setClientId] = useState(''); // <- pour garder le vrai ID du client
+  const lignesFinales: Ligne[] = [
+    ...(afficherMainOeuvre
+      ? lignesMainOeuvre.map(l => ({
+          designation: l.designation,
+          unite: 'U',
+          quantite: 1,
+          prix: l.mode === 'fixe' ? l.prixFixe : l.prixHoraire * l.heures,
+        }))
+      : []),
+    ...(afficherPieces
+      ? lignesPieces.map(l => ({
+          designation: l.designation,
+          unite: 'U',
+          quantite: l.quantite,
+          prix: l.prixAchat * (1 + l.margePourcent / 100),
+        }))
+      : []),
+  ];
+
+  const totalHTBrut = lignesFinales.reduce(
+    (somme, ligne) => somme + ligne.quantite * ligne.prix,
+    0
+  );
+
+  const remise = totalHTBrut * (remisePourcent / 100);
+  const totalHT = totalHTBrut - remise;
+  const tva = totalHT * (tvaTaux / 100);
+  const totalTTC = totalHT + tva;
+  const acompte = totalTTC * (acomptePourcent / 100);
+
+  const boutonActif = lignes.length > 0 && recepteur.nom.trim() !== '';
+
+  // Logo upload
+  const handleLogoUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setLogo(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -366,101 +442,6 @@ export default function Home() {
     } finally {
       setChargementIA(false);
     }
-  };
-
-  // Totaux
-  const lignesFinales: Ligne[] = [
-    ...(afficherMainOeuvre
-      ? lignesMainOeuvre.map(l => ({
-          designation: l.designation,
-          unite: 'U',
-          quantite: 1,
-          prix: l.mode === 'fixe' ? l.prixFixe : l.prixHoraire * l.heures,
-        }))
-      : []),
-    ...(afficherPieces
-      ? lignesPieces.map(l => ({
-          designation: l.designation,
-          unite: 'U',
-          quantite: l.quantite,
-          prix: l.prixAchat * (1 + l.margePourcent / 100),
-        }))
-      : []),
-  ];
-
-  const totalHTBrut = lignesFinales.reduce(
-    (somme, ligne) => somme + ligne.quantite * ligne.prix,
-    0
-  );
-
-  const remise = totalHTBrut * (remisePourcent / 100);
-  const totalHT = totalHTBrut - remise;
-  const tva = totalHT * (tvaTaux / 100);
-  const totalTTC = totalHT + tva;
-  const acompte = totalTTC * (acomptePourcent / 100);
-
-  const boutonActif = lignes.length > 0 && recepteur.nom.trim() !== '';
-
-  // Logo upload
-  const handleLogoUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setLogo(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const exporterPDFSansClasses = async () => {
-    const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.top = '-9999px';
-    container.style.left = '0';
-    container.style.zIndex = '-1';
-    container.style.width = '794px';
-    document.body.appendChild(container);
-
-    // Rendu HTML statique
-    const html = renderToStaticMarkup(
-      <RenduPDF
-        date={new Date().toLocaleDateString('fr-FR')}
-        titre={titre}
-        emetteur={emetteur}
-        recepteur={recepteur}
-        lignesMainOeuvre={lignesMainOeuvre.map(l => ({
-          designation: l.designation,
-          unite: 'U',
-          quantite: 1,
-          prix: l.mode === 'fixe' ? l.prixFixe : l.prixHoraire * l.heures,
-        }))}
-        lignesPieces={lignesPieces.map(l => ({
-          designation: l.designation,
-          unite: 'U',
-          quantite: l.quantite,
-          prix:
-            l.mode === 'calculé' ? l.prixAchat * (1 + l.margePourcent / 100) : l.prixManuel || 0,
-        }))}
-        totalHT={totalHT}
-        tva={tva}
-        totalTTC={totalTTC}
-        acompte={acompte}
-        tvaTaux={tvaTaux}
-        acomptePourcent={acomptePourcent}
-        mentions={mentions}
-        intro={intro}
-        conclusion={conclusion}
-        signatureClient={signatureClient || undefined}
-        signatureEmetteur={signatureEmetteur || undefined}
-      />
-    );
-
-    container.innerHTML = html;
-
-    // Export via html2pdf
-    const html2pdf = (await import('html2pdf.js')).default;
-    await html2pdf().set({ margin: 0 }).from(container).save();
-
-    document.body.removeChild(container);
   };
 
   // Le JSX complet est maintenu dans le reste du code.

@@ -19,11 +19,15 @@ export default function BlocMainOeuvre({
   setLignes,
   afficher,
   setAfficher,
+  nomCategorie,
+  setNomCategorie,
 }: {
   lignes: LigneMainOeuvre[];
   setLignes: (l: LigneMainOeuvre[]) => void;
   afficher: boolean;
   setAfficher: (v: boolean) => void;
+  nomCategorie: string;
+  setNomCategorie: (v: string) => void;
 }) {
   const ajouterLigne = () => {
     setLignes([
@@ -50,7 +54,16 @@ export default function BlocMainOeuvre({
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold">👷‍♂️ Main d’œuvre</h2>
+      <div className="flex items-center gap-2">
+        <span>👷‍♂️</span>
+        <input
+          type="text"
+          value={nomCategorie}
+          onChange={e => setNomCategorie(e.target.value)}
+          className="text-lg font-semibold bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none transition"
+        />
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-separate border-spacing-y-2">
           <thead>
@@ -75,14 +88,30 @@ export default function BlocMainOeuvre({
                   />
                 </td>
                 <td className="px-3 py-2">
-                  <select
-                    value={ligne.mode}
-                    onChange={e => modifierLigne(index, 'mode', e.target.value)}
-                    className="w-full bg-transparent focus:outline-none text-sm"
-                  >
-                    <option value="horaire">À l'heure</option>
-                    <option value="fixe">Fixe</option>
-                  </select>
+                  <div className="inline-flex rounded-md border border-gray-300 overflow-hidden text-sm w-full">
+                    <button
+                      type="button"
+                      onClick={() => modifierLigne(index, 'mode', 'horaire')}
+                      className={`w-1/2 px-3 py-1 transition-colors ${
+                        ligne.mode === 'horaire'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      À l'heure
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => modifierLigne(index, 'mode', 'fixe')}
+                      className={`w-1/2 px-3 py-1 transition-colors ${
+                        ligne.mode === 'fixe'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      Fixe
+                    </button>
+                  </div>
                 </td>
                 <td className="px-3 py-2">
                   <input
@@ -137,7 +166,7 @@ export default function BlocMainOeuvre({
 
       <button
         onClick={ajouterLigne}
-        className="flex items-center gap-2 bg-white hover:bg-gray-100 text-sm text-gray-800 px-4 py-2 rounded-md border border-gray-300 shadow-sm w-fit"
+        className="cursor-pointer flex items-center gap-2 bg-white hover:bg-gray-100 text-sm text-gray-800 px-4 py-2 rounded-md border border-gray-300 shadow-sm w-fit"
       >
         ➕ Ajouter une ligne
       </button>

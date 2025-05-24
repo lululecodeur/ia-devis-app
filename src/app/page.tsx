@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useState, ChangeEvent, useEffect, useRef } from 'react';
 import { exporterPDF } from '@/utils/exportPdf';
 import Card from '@/components/ui/Card';
@@ -9,6 +10,7 @@ import BlocMainOeuvre from '@/components/BlocMainOeuvre';
 import BlocPieces from '@/components/BlocPieces';
 import Link from 'next/link';
 import { createRoot } from 'react-dom/client'; // ✅ à importer une seule fois
+import BlocCategorie from '@/components/BlocCategorie';
 
 // Types
 
@@ -44,6 +46,20 @@ interface LignePiece {
   quantite: number;
   prixManuel?: number;
   mode: 'calculé' | 'manuel';
+}
+
+interface CategorieDynamique {
+  nom: string;
+  emoji: string;
+  lignes: LigneGenerique[];
+  afficher: boolean;
+}
+
+interface LigneGenerique {
+  designation: string;
+  quantite: number;
+  prix: number;
+  unite: string;
 }
 
 // Totaux
@@ -91,6 +107,9 @@ export default function Home() {
   const [mentions, setMentions] = useState('');
   const [logo, setLogo] = useState<string | null>(null);
   const [emetteur, setEmetteur] = useState({ nom: '', adresse: '', siret: '', email: '', tel: '' });
+  const [iban, setIban] = useState('');
+  const [bic, setBic] = useState('');
+
   const [recepteur, setRecepteur] = useState({ nom: '', adresse: '', email: '', tel: '' });
   const [intro, setIntro] = useState('');
   const [conclusion, setConclusion] = useState('');
@@ -120,6 +139,10 @@ export default function Home() {
   const canvasRef = useRef<SignatureCanvas>(null);
   const [lignesMainOeuvre, setLignesMainOeuvre] = useState<LigneMainOeuvre[]>([]);
   const [lignesPieces, setLignesPieces] = useState<LignePiece[]>([]);
+  const [nomMainOeuvre, setNomMainOeuvre] = useState('Main d’œuvre');
+  const [nomPieces, setNomPieces] = useState('Pièces');
+  const [categoriesDynamiques, setCategoriesDynamiques] = useState<CategorieDynamique[]>([]);
+  const [nouvelleCategorie, setNouvelleCategorie] = useState('');
 
   const clearSignature = () => canvasRef.current?.clear();
   const saveSignature = () => {
@@ -134,6 +157,7 @@ export default function Home() {
   const [afficherMainOeuvre, setAfficherMainOeuvre] = useState(true);
   const [afficherPieces, setAfficherPieces] = useState(true);
   const lignesPourPDF: { type: 'header' | 'ligne'; contenu?: Ligne }[] = [];
+  const [numeroDevis, setNumeroDevis] = useState('');
 
   if (lignesMainOeuvre.length > 0) {
     lignesPourPDF.push({
@@ -206,20 +230,32 @@ export default function Home() {
   const lignesFinales: Ligne[] = [
     ...(afficherMainOeuvre
       ? lignesMainOeuvre.map(l => ({
-          designation: l.designation,
+          designation: `[${nomMainOeuvre}] ${l.designation}`,
           unite: 'U',
           quantite: 1,
           prix: l.mode === 'fixe' ? l.prixFixe : l.prixHoraire * l.heures,
         }))
       : []),
+
     ...(afficherPieces
       ? lignesPieces.map(l => ({
-          designation: l.designation,
+          designation: `[${nomPieces}] ${l.designation}`,
           unite: 'U',
           quantite: l.quantite,
           prix: l.prixAchat * (1 + l.margePourcent / 100),
         }))
       : []),
+
+    ...categoriesDynamiques
+      .filter(c => c.afficher)
+      .flatMap(c =>
+        c.lignes.map(l => ({
+          designation: `[${c.nom}] ${l.designation}`,
+          unite: l.unite,
+          quantite: l.quantite,
+          prix: l.prix,
+        }))
+      ),
   ];
 
   const totalHTBrut = lignesFinales.reduce(
@@ -485,7 +521,7 @@ export default function Home() {
                       <input
                         type="text"
                         placeholder="Ex : Électricien, Peintre, Photographe..."
-                        className="w-full border p-2 rounded mb-2"
+                        className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={secteurActif}
                         onChange={e => setSecteurActif(e.target.value)}
                       />
@@ -626,7 +662,7 @@ export default function Home() {
                                 max="300"
                                 value={hauteurLogo}
                                 onChange={e => setHauteurLogo(Number(e.target.value))}
-                                className="w-full appearance-none h-2 rounded-lg bg-gray-200 focus:outline-none slider-thumb-visible"
+                                className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
                             </div>
 
@@ -702,7 +738,7 @@ export default function Home() {
                       <div className="flex flex-col gap-4">
                         <label className="block font-medium">Nom de l'entreprise</label>
                         <input
-                          className="w-full border p-3 rounded text-base"
+                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           type="text"
                           inputMode="text"
                           autoComplete="organization"
@@ -716,7 +752,7 @@ export default function Home() {
 
                         <label className="block font-medium">Adresse</label>
                         <textarea
-                          className="w-full border p-3 rounded text-base resize-y min-h-[60px]"
+                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           autoComplete="street-address"
                           aria-label="Adresse de l'entreprise"
                           placeholder="Ex : 12 rue des Lilas, 75000 Paris"
@@ -727,7 +763,7 @@ export default function Home() {
 
                         <label className="block font-medium">SIRET</label>
                         <input
-                          className="w-full border p-3 rounded text-base"
+                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           inputMode="numeric"
                           autoComplete="off"
                           aria-label="Numéro SIRET"
@@ -738,7 +774,7 @@ export default function Home() {
 
                         <label className="block font-medium">Email</label>
                         <input
-                          className="w-full border p-3 rounded text-base"
+                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           type="email"
                           inputMode="email"
                           autoComplete="email"
@@ -754,7 +790,7 @@ export default function Home() {
 
                         <label className="block font-medium">Téléphone</label>
                         <input
-                          className="w-full border p-3 rounded text-base"
+                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           type="tel"
                           inputMode="tel"
                           autoComplete="tel"
@@ -763,15 +799,32 @@ export default function Home() {
                           value={emetteur.tel}
                           onChange={e => setEmetteur({ ...emetteur, tel: e.target.value })}
                         />
+                        <label className="block font-medium">IBAN</label>
+                        <input
+                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          type="text"
+                          placeholder="Ex : FR76 1234 5678 9012 3456 7890 123"
+                          value={iban}
+                          onChange={e => setIban(e.target.value)}
+                        />
+
+                        <label className="block font-medium">BIC</label>
+                        <input
+                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          type="text"
+                          placeholder="Ex : AGRIFRPP"
+                          value={bic}
+                          onChange={e => setBic(e.target.value)}
+                        />
 
                         <button
-                          className="text-sm text-red-600 underline"
                           onClick={() => {
                             localStorage.removeItem('emetteur');
                             localStorage.removeItem('logo');
                             setEmetteur({ nom: '', adresse: '', siret: '', email: '', tel: '' });
                             setLogo(null);
                           }}
+                          className="text-sm text-red-600 underline hover:text-red-800 transition-colors cursor-pointer"
                         >
                           🔄 Réinitialiser les infos enregistrées
                         </button>
@@ -782,7 +835,7 @@ export default function Home() {
                       <div className="flex flex-col gap-4">
                         <label className="block font-medium">Nom du client</label>
                         <input
-                          className="w-full border p-3 rounded text-base"
+                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           type="text"
                           inputMode="text"
                           autoComplete="name"
@@ -794,7 +847,7 @@ export default function Home() {
 
                         <label className="block font-medium">Adresse du client</label>
                         <textarea
-                          className="w-full border p-3 rounded text-base resize-y min-h-[60px]"
+                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           autoComplete="street-address"
                           aria-label="Adresse du client"
                           placeholder="Ex : 7 avenue de la République, 75011 Paris"
@@ -805,7 +858,7 @@ export default function Home() {
 
                         <label className="block font-medium">Email du client</label>
                         <input
-                          className="w-full border p-3 rounded text-base"
+                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           type="email"
                           inputMode="email"
                           autoComplete="email"
@@ -817,7 +870,7 @@ export default function Home() {
 
                         <label className="block font-medium">Téléphone du client</label>
                         <input
-                          className="w-full border p-3 rounded text-base"
+                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           type="tel"
                           inputMode="tel"
                           autoComplete="tel"
@@ -889,7 +942,7 @@ export default function Home() {
                     <div className="flex flex-col gap-4">
                       {/* Titre personnalisable */}
                       <input
-                        className="w-full border p-2 rounded text-lg font-semibold"
+                        className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={titre}
                         onChange={e => setTitre(e.target.value)}
                         placeholder="Titre du devis"
@@ -898,7 +951,7 @@ export default function Home() {
                       {/* Menu déroulant de sélection */}
                       <label className="block font-medium">Secteur sélectionné</label>
                       <select
-                        className="w-full border p-2 rounded"
+                        className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={secteurActif}
                         onChange={e => setSecteurActif(e.target.value)}
                       >
@@ -945,7 +998,7 @@ export default function Home() {
                       <div className="flex gap-4 mt-2">
                         <button
                           onClick={() => setOnglet('manuel')}
-                          className={`px-4 py-2 rounded-md text-sm border transition-colors ${
+                          className={`cursor-pointer px-4 py-2 rounded-md text-sm border transition-colors ${
                             onglet === 'manuel'
                               ? 'bg-blue-600 text-white border-blue-600'
                               : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300'
@@ -955,7 +1008,7 @@ export default function Home() {
                         </button>
                         <button
                           onClick={() => setOnglet('ia')}
-                          className={`px-4 py-2 rounded-md text-sm border transition-colors ${
+                          className={`cursor-pointer px-4 py-2 rounded-md text-sm border transition-colors ${
                             onglet === 'ia'
                               ? 'bg-blue-600 text-white border-blue-600'
                               : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300'
@@ -966,16 +1019,26 @@ export default function Home() {
                       </div>
                     </div>
                   </Card>
+                  <Card title="🧾 Numéro du devis">
+                    <input
+                      className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={numeroDevis}
+                      onChange={e => setNumeroDevis(e.target.value)}
+                      placeholder="Ex : DEV-2025-001"
+                    />
+                  </Card>
 
                   {onglet === 'manuel' && (
-                    <>
-                      <Card title="🛠️ Lignes manuelles">
-                        {/* Tableaux */}
+                    <div className="flex flex-col gap-6">
+                      {/* 🟩 Bloc classique : main d'œuvre + pièces */}
+                      <Card>
                         <BlocMainOeuvre
                           lignes={lignesMainOeuvre}
                           setLignes={setLignesMainOeuvre}
                           afficher={afficherMainOeuvre}
                           setAfficher={setAfficherMainOeuvre}
+                          nomCategorie={nomMainOeuvre}
+                          setNomCategorie={setNomMainOeuvre}
                         />
 
                         <BlocPieces
@@ -983,9 +1046,62 @@ export default function Home() {
                           setLignes={setLignesPieces}
                           afficher={afficherPieces}
                           setAfficher={setAfficherPieces}
+                          nomCategorie={nomPieces}
+                          setNomCategorie={setNomPieces}
                         />
                       </Card>
-                    </>
+
+                      {/* 🆕 Interface d’ajout de catégorie personnalisée */}
+                      <Card title="➕ Ajouter une catégorie personnalisée">
+                        <div className="flex gap-4">
+                          <input
+                            type="text"
+                            value={nouvelleCategorie}
+                            onChange={e => setNouvelleCategorie(e.target.value)}
+                            className="w-full p-3 border rounded"
+                            placeholder="Ex: Location, Transport, Divers"
+                          />
+                          <button
+                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                            onClick={() => {
+                              const nom = nouvelleCategorie.trim();
+                              if (!nom) return;
+                              setCategoriesDynamiques([
+                                ...categoriesDynamiques,
+                                {
+                                  nom,
+                                  emoji: '📦',
+                                  lignes: [],
+                                  afficher: true,
+                                },
+                              ]);
+                              setNouvelleCategorie('');
+                            }}
+                          >
+                            ➕ Ajouter
+                          </button>
+                        </div>
+                      </Card>
+
+                      {/* 🔁 Catégories personnalisées */}
+                      {categoriesDynamiques.map((cat, index) => (
+                        <Card key={index}>
+                          <BlocCategorie
+                            categorie={cat}
+                            onUpdate={updatedCat => {
+                              const copie = [...categoriesDynamiques];
+                              copie[index] = updatedCat;
+                              setCategoriesDynamiques(copie);
+                            }}
+                            onDelete={() => {
+                              const copie = [...categoriesDynamiques];
+                              copie.splice(index, 1);
+                              setCategoriesDynamiques(copie);
+                            }}
+                          />
+                        </Card>
+                      ))}
+                    </div>
                   )}
 
                   {onglet === 'ia' && (
@@ -995,7 +1111,7 @@ export default function Home() {
                           Brief de la prestation (pour génération IA)
                         </label>
                         <textarea
-                          className="w-full p-2 border rounded h-24 mb-4"
+                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           aria-label="Brief de la prestation"
                           placeholder="Ex : Pose d’un chauffe-eau 200L mural avec déplacement évier"
                           value={brief}
@@ -1080,7 +1196,7 @@ export default function Home() {
                         </table>
 
                         <button
-                          className="bg-indigo-600 text-white px-4 py-1 rounded hover:bg-indigo-700"
+                          className="cursor-pointer bg-indigo-600 text-white px-4 py-1 rounded hover:bg-indigo-700"
                           onClick={() =>
                             setTarifs([...tarifs, { designation: '', unite: 'U', prix: 0 }])
                           }
@@ -1091,7 +1207,7 @@ export default function Home() {
                         <button
                           onClick={genererAvecIA}
                           disabled={!brief || chargementIA}
-                          className={`mt-4 px-4 py-2 rounded text-white ${
+                          className={`cursor-pointer mt-4 px-4 py-2 rounded text-white ${
                             chargementIA ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
                           }`}
                         >
@@ -1142,7 +1258,7 @@ export default function Home() {
                     <div className="flex flex-col gap-4">
                       <label className="block font-medium mb-1">Mentions légales</label>
                       <textarea
-                        className="w-full p-2 border rounded h-24 mb-4"
+                        className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Ex : Devis valable 15 jours..."
                         value={mentions}
                         onChange={e => setMentions(e.target.value)}
@@ -1160,7 +1276,7 @@ export default function Home() {
                           <input
                             type="number"
                             onWheel={e => e.currentTarget.blur()}
-                            className="w-full border p-2 rounded"
+                            className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={tvaTaux.toString()}
                             onChange={e => setTvaTaux(cleanNumericInput(e.target.value))}
                           />
@@ -1176,7 +1292,7 @@ export default function Home() {
                           <input
                             type="number"
                             onWheel={e => e.currentTarget.blur()}
-                            className="w-full border p-2 rounded"
+                            className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={remisePourcent.toString()}
                             onChange={e => setRemisePourcent(cleanNumericInput(e.target.value))}
                           />
@@ -1192,7 +1308,7 @@ export default function Home() {
                           <input
                             type="number"
                             onWheel={e => e.currentTarget.blur()}
-                            className="w-full border p-2 rounded"
+                            className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={acomptePourcent.toString()}
                             onChange={e => setAcomptePourcent(cleanNumericInput(e.target.value))}
                           />
@@ -1208,7 +1324,7 @@ export default function Home() {
                         Texte d’introduction (facultatif)
                       </label>
                       <textarea
-                        className="w-full p-2 border rounded h-24 text-base"
+                        className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Ex : Merci pour votre confiance, voici le détail de notre proposition..."
                         value={intro}
                         onChange={e => setIntro(e.target.value)}
@@ -1216,10 +1332,10 @@ export default function Home() {
 
                       {/* Paragraphe de conclusion */}
                       <label className="block font-medium mt-6 mb-1">
-                        Texte de conclusion (facultatif)
+                        Remarques ou informations complémentaires (facultatif)
                       </label>
                       <textarea
-                        className="w-full p-2 border rounded h-24"
+                        className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Ex : N'hésitez pas à nous contacter pour toute question complémentaire."
                         value={conclusion}
                         onChange={e => setConclusion(e.target.value)}
@@ -1490,11 +1606,14 @@ export default function Home() {
                     padding: '24px',
                     fontSize: '14px',
                     fontFamily: 'sans-serif',
-                    border: '1px solid #ccc',
+                    border: '1px solid #e5e7eb',
+
                     borderRadius: '12px',
                     boxShadow: '0 0 10px rgba(0,0,0,0.1)',
                     margin: '0 auto',
-                    transform: `scale(${deviceScale})`,
+                    // transform: `scale(${deviceScale})`,
+                    transform: 'none',
+
                     transformOrigin: 'top left',
                   }}
                 >
@@ -1540,6 +1659,8 @@ export default function Home() {
                       )}
                       {emetteur.email && <p style={{ margin: '4px 0' }}>{emetteur.email}</p>}
                       {emetteur.tel && <p style={{ margin: '4px 0' }}>{emetteur.tel}</p>}
+                      {iban && <p style={{ margin: '4px 0' }}>IBAN : {iban}</p>}
+                      {bic && <p style={{ margin: '4px 0' }}>BIC : {bic}</p>}
                     </div>
 
                     <div style={{ textAlign: 'right' }}>
@@ -1571,7 +1692,8 @@ export default function Home() {
                       width: '100%',
                       borderCollapse: 'collapse',
                       marginTop: '24px',
-                      border: '1px solid #ccc',
+                      border: '1px solid #e5e7eb',
+
                       fontSize: '14px',
                     }}
                   >
@@ -1587,17 +1709,18 @@ export default function Home() {
                                 fontWeight: 'bold',
                                 padding: '8px',
                                 textAlign: 'left',
-                                borderBottom: '1px solid #ccc',
+                                borderBottom: '1px solid #e5e7eb',
                               }}
                             >
-                              Main d’œuvre
+                              {nomMainOeuvre}
                             </td>
                           </tr>
+
                           <tr>
                             <th
                               style={{
                                 padding: '6px',
-                                borderBottom: '1px solid #ccc',
+                                borderBottom: '1px solid #e5e7eb',
                                 textAlign: 'center',
                               }}
                             >
@@ -1606,7 +1729,7 @@ export default function Home() {
                             <th
                               style={{
                                 padding: '6px',
-                                borderBottom: '1px solid #ccc',
+                                borderBottom: '1px solid #e5e7eb',
                                 textAlign: 'center',
                               }}
                             >
@@ -1615,7 +1738,7 @@ export default function Home() {
                             <th
                               style={{
                                 padding: '6px',
-                                borderBottom: '1px solid #ccc',
+                                borderBottom: '1px solid #e5e7eb',
                                 textAlign: 'center',
                               }}
                             >
@@ -1624,7 +1747,7 @@ export default function Home() {
                             <th
                               style={{
                                 padding: '6px',
-                                borderBottom: '1px solid #ccc',
+                                borderBottom: '1px solid #e5e7eb',
                                 textAlign: 'center',
                               }}
                             >
@@ -1633,7 +1756,7 @@ export default function Home() {
                             <th
                               style={{
                                 padding: '6px',
-                                borderBottom: '1px solid #ccc',
+                                borderBottom: '1px solid #e5e7eb',
                                 textAlign: 'center',
                               }}
                             >
@@ -1675,18 +1798,17 @@ export default function Home() {
                                 fontWeight: 'bold',
                                 padding: '8px',
                                 textAlign: 'left',
-                                borderBottom: '1px solid #ccc',
-                                marginTop: '16px',
+                                borderBottom: '1px solid #e5e7eb',
                               }}
                             >
-                              Pièces
+                              {nomPieces}
                             </td>
                           </tr>
                           <tr>
                             <th
                               style={{
                                 padding: '6px',
-                                borderBottom: '1px solid #ccc',
+                                borderBottom: '1px solid #e5e7eb',
                                 textAlign: 'center',
                               }}
                             >
@@ -1695,7 +1817,7 @@ export default function Home() {
                             <th
                               style={{
                                 padding: '6px',
-                                borderBottom: '1px solid #ccc',
+                                borderBottom: '1px solid #e5e7eb',
                                 textAlign: 'center',
                               }}
                             >
@@ -1704,7 +1826,7 @@ export default function Home() {
                             <th
                               style={{
                                 padding: '6px',
-                                borderBottom: '1px solid #ccc',
+                                borderBottom: '1px solid #e5e7eb',
                                 textAlign: 'center',
                               }}
                             >
@@ -1713,7 +1835,7 @@ export default function Home() {
                             <th
                               style={{
                                 padding: '6px',
-                                borderBottom: '1px solid #ccc',
+                                borderBottom: '1px solid #e5e7eb',
                                 textAlign: 'center',
                               }}
                             >
@@ -1722,7 +1844,7 @@ export default function Home() {
                             <th
                               style={{
                                 padding: '6px',
-                                borderBottom: '1px solid #ccc',
+                                borderBottom: '1px solid #e5e7eb',
                                 textAlign: 'center',
                               }}
                             >
@@ -1751,6 +1873,92 @@ export default function Home() {
                           })}
                         </>
                       )}
+                      {categoriesDynamiques.map((cat, i) =>
+                        cat.afficher && cat.lignes.length > 0 ? (
+                          <React.Fragment key={i}>
+                            <tr>
+                              <td
+                                colSpan={5}
+                                style={{
+                                  backgroundColor: '#f2f2f2',
+                                  fontWeight: 'bold',
+                                  padding: '8px',
+                                  textAlign: 'left',
+                                  borderBottom: '1px solid #e5e7eb',
+                                }}
+                              >
+                                {cat.emoji} {cat.nom}
+                              </td>
+                            </tr>
+                            <tr>
+                              <th
+                                style={{
+                                  padding: '6px',
+                                  borderBottom: '1px solid #e5e7eb',
+                                  textAlign: 'center',
+                                }}
+                              >
+                                Désignation
+                              </th>
+                              <th
+                                style={{
+                                  padding: '6px',
+                                  borderBottom: '1px solid #e5e7eb',
+                                  textAlign: 'center',
+                                }}
+                              >
+                                Unité
+                              </th>
+                              <th
+                                style={{
+                                  padding: '6px',
+                                  borderBottom: '1px solid #e5e7eb',
+                                  textAlign: 'center',
+                                }}
+                              >
+                                Qté
+                              </th>
+                              <th
+                                style={{
+                                  padding: '6px',
+                                  borderBottom: '1px solid #e5e7eb',
+                                  textAlign: 'center',
+                                }}
+                              >
+                                PU HT (€)
+                              </th>
+                              <th
+                                style={{
+                                  padding: '6px',
+                                  borderBottom: '1px solid #e5e7eb',
+                                  textAlign: 'center',
+                                }}
+                              >
+                                Total HT (€)
+                              </th>
+                            </tr>
+                            {cat.lignes.map((ligne, j) => (
+                              <tr key={`cat-${i}-ligne-${j}`}>
+                                <td style={{ padding: '6px', textAlign: 'center' }}>
+                                  {ligne.designation}
+                                </td>
+                                <td style={{ padding: '6px', textAlign: 'center' }}>
+                                  {ligne.unite}
+                                </td>
+                                <td style={{ padding: '6px', textAlign: 'center' }}>
+                                  {ligne.quantite}
+                                </td>
+                                <td style={{ padding: '6px', textAlign: 'center' }}>
+                                  {ligne.prix.toFixed(2)}
+                                </td>
+                                <td style={{ padding: '6px', textAlign: 'center' }}>
+                                  {(ligne.quantite * ligne.prix).toFixed(2)}
+                                </td>
+                              </tr>
+                            ))}
+                          </React.Fragment>
+                        ) : null
+                      )}
                     </tbody>
                   </table>
 
@@ -1768,7 +1976,7 @@ export default function Home() {
                         fontSize: '14px',
                         minWidth: '280px',
                         backgroundColor: '#f9f9f9',
-                        border: '1px solid #ccc',
+                        border: '1px solid #e5e7eb',
                       }}
                     >
                       <tbody>
@@ -1779,8 +1987,8 @@ export default function Home() {
                                 style={{
                                   padding: '8px 12px',
                                   fontWeight: '500',
-                                  borderRight: '1px solid #ccc',
-                                  borderBottom: '1px solid #ccc',
+                                  borderRight: '1px solid #e5e7eb',
+                                  borderBottom: '1px solid #e5e7eb',
                                 }}
                               >
                                 Total HT brut
@@ -1788,7 +1996,7 @@ export default function Home() {
                               <td
                                 style={{
                                   padding: '8px 12px',
-                                  borderBottom: '1px solid #ccc',
+                                  borderBottom: '1px solid #e5e7eb',
                                   textAlign: 'right',
                                 }}
                               >
@@ -1800,8 +2008,8 @@ export default function Home() {
                                 style={{
                                   padding: '8px 12px',
                                   fontWeight: '500',
-                                  borderRight: '1px solid #ccc',
-                                  borderBottom: '1px solid #ccc',
+                                  borderRight: '1px solid #e5e7eb',
+                                  borderBottom: '1px solid #e5e7eb',
                                 }}
                               >
                                 Remise ({remisePourcent}%)
@@ -1809,7 +2017,7 @@ export default function Home() {
                               <td
                                 style={{
                                   padding: '8px 12px',
-                                  borderBottom: '1px solid #ccc',
+                                  borderBottom: '1px solid #e5e7eb',
                                   textAlign: 'right',
                                 }}
                               >
@@ -1823,8 +2031,8 @@ export default function Home() {
                             style={{
                               padding: '8px 12px',
                               fontWeight: '500',
-                              borderRight: '1px solid #ccc',
-                              borderBottom: '1px solid #ccc',
+                              borderRight: '1px solid #e5e7eb',
+                              borderBottom: '1px solid #e5e7eb',
                             }}
                           >
                             Total HT
@@ -1832,7 +2040,7 @@ export default function Home() {
                           <td
                             style={{
                               padding: '8px 12px',
-                              borderBottom: '1px solid #ccc',
+                              borderBottom: '1px solid #e5e7eb',
                               textAlign: 'right',
                             }}
                           >
@@ -1844,8 +2052,8 @@ export default function Home() {
                             style={{
                               padding: '8px 12px',
                               fontWeight: '500',
-                              borderRight: '1px solid #ccc',
-                              borderBottom: '1px solid #ccc',
+                              borderRight: '1px solid #e5e7eb',
+                              borderBottom: '1px solid #e5e7eb',
                             }}
                           >
                             TVA ({tvaTaux}%)
@@ -1853,7 +2061,7 @@ export default function Home() {
                           <td
                             style={{
                               padding: '8px 12px',
-                              borderBottom: '1px solid #ccc',
+                              borderBottom: '1px solid #e5e7eb',
                               textAlign: 'right',
                             }}
                           >
@@ -1861,7 +2069,7 @@ export default function Home() {
                           </td>
                         </tr>
                         <tr style={{ backgroundColor: '#eee', fontWeight: 'bold' }}>
-                          <td style={{ padding: '8px 12px', borderRight: '1px solid #ccc' }}>
+                          <td style={{ padding: '8px 12px', borderRight: '1px solid #e5e7eb' }}>
                             Total TTC
                           </td>
                           <td style={{ padding: '8px 12px', textAlign: 'right' }}>
@@ -1873,7 +2081,7 @@ export default function Home() {
                             <td
                               style={{
                                 padding: '8px 12px',
-                                borderRight: '1px solid #ccc',
+                                borderRight: '1px solid #e5e7eb',
                                 fontWeight: '500',
                               }}
                             >

@@ -1,5 +1,5 @@
-import SignatureCanvas from "react-signature-canvas";
-import { useRef } from "react";
+import SignatureCanvas from 'react-signature-canvas';
+import { useRef } from 'react';
 
 export default function SignatureBlock({
   label,
@@ -19,13 +19,13 @@ export default function SignatureBlock({
 
   const save = () => {
     if (!ref.current || ref.current.isEmpty()) return;
-    const url = ref.current.getCanvas().toDataURL("image/png");
+    const url = ref.current.getCanvas().toDataURL('image/png');
     onChange(url);
   };
 
   return (
-    <div className="flex flex-col gap-3 border p-6 rounded-xl bg-white shadow-sm w-full">
-      <label className="font-semibold text-gray-800 text-base">{label}</label>
+    <div className="flex flex-col gap-3 border border-gray-200 p-6 rounded-xl bg-white shadow-sm w-full">
+      <label className="font-medium text-gray-700 text-sm">{label}</label>
 
       <SignatureCanvas
         ref={(el: SignatureCanvas | null) => {
@@ -35,7 +35,15 @@ export default function SignatureBlock({
         canvasProps={{
           width: 300,
           height: 100,
-          className: "border rounded bg-white shadow-inner",
+          className: 'signature-canvas',
+          style: {
+            border: '1px solid #d1d5db',
+            borderRadius: '0.5rem',
+            backgroundColor: '#fff',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            transform: 'none', // crucial
+            touchAction: 'none', // mobile fixes
+          },
         }}
       />
 

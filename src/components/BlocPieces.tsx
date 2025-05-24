@@ -20,11 +20,15 @@ export default function BlocPieces({
   setLignes,
   afficher,
   setAfficher,
+  nomCategorie,
+  setNomCategorie,
 }: {
   lignes: LignePiece[];
   setLignes: (l: LignePiece[]) => void;
   afficher: boolean;
   setAfficher: (v: boolean) => void;
+  nomCategorie: string;
+  setNomCategorie: (v: string) => void;
 }) {
   const ajouterLigne = () => {
     setLignes([
@@ -63,114 +67,96 @@ export default function BlocPieces({
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold">🔩 Pièces</h2>
+      <div className="flex items-center gap-2">
+        <span>🔩</span>
+        <input
+          type="text"
+          value={nomCategorie}
+          onChange={e => setNomCategorie(e.target.value)}
+          className="text-lg font-semibold bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none transition"
+        />
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-separate border-spacing-y-2">
           <thead>
             <tr className="text-left text-xs uppercase text-gray-600 tracking-wider">
               <th className="px-3 py-2 bg-gray-100 rounded-l-lg">Désignation</th>
-              <th className="px-3 py-2 bg-gray-100">Mode</th>
-              <th className="px-3 py-2 bg-gray-100">Prix d'achat</th>
-              <th className="px-3 py-2 bg-gray-100">Marge (%)</th>
-              <th className="px-3 py-2 bg-gray-100">Prix manuel</th>
+              <th className="px-3 py-2 bg-gray-100">Prix d’achat (€)</th>
+              <th className="px-3 py-2 bg-gray-100">% Marge</th>
               <th className="px-3 py-2 bg-gray-100">Quantité</th>
-              <th className="px-3 py-2 bg-gray-100">PU HT</th>
-              <th className="px-3 py-2 bg-gray-100">Total HT</th>
+              <th className="px-3 py-2 bg-gray-100">Mode</th>
               <th className="px-3 py-2 bg-gray-100 rounded-r-lg text-center">🗑️</th>
             </tr>
           </thead>
           <tbody>
-            {lignes.map((ligne, index) => {
-              const prixUnitaire =
-                ligne.mode === 'calculé'
-                  ? ligne.prixAchat * (1 + ligne.margePourcent / 100)
-                  : ligne.prixManuel || 0;
-              const totalHT = prixUnitaire * ligne.quantite;
-
-              return (
-                <tr key={index} className="bg-white shadow-sm rounded-xl">
-                  <td className="px-3 py-2 align-top">
-                    <input
-                      className="w-full bg-transparent focus:outline-none text-sm"
-                      value={ligne.designation}
-                      placeholder="Désignation"
-                      onChange={e => modifierLigne(index, 'designation', e.target.value)}
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <select
-                      value={ligne.mode}
-                      onChange={e => modifierLigne(index, 'mode', e.target.value)}
-                      className="w-full bg-transparent focus:outline-none text-sm"
-                    >
-                      <option value="calculé">Calculé</option>
-                      <option value="manuel">Manuel</option>
-                    </select>
-                  </td>
-                  <td className="px-3 py-2">
-                    <input
-                      type="text"
-                      className={`w-full bg-transparent text-sm ${
-                        ligne.mode === 'manuel' ? 'text-gray-400' : ''
-                      }`}
-                      value={formatNombre(ligne.prixAchat)}
-                      onChange={e => modifierLigne(index, 'prixAchat', e.target.value)}
-                      disabled={ligne.mode === 'manuel'}
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <input
-                      type="text"
-                      className={`w-full bg-transparent text-sm ${
-                        ligne.mode === 'manuel' ? 'text-gray-400' : ''
-                      }`}
-                      value={formatNombre(ligne.margePourcent)}
-                      onChange={e => modifierLigne(index, 'margePourcent', e.target.value)}
-                      disabled={ligne.mode === 'manuel'}
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <input
-                      type="text"
-                      className={`w-full bg-transparent text-sm ${
-                        ligne.mode === 'calculé' ? 'text-gray-400' : ''
-                      }`}
-                      value={formatNombre(ligne.prixManuel || 0)}
-                      onChange={e => modifierLigne(index, 'prixManuel', e.target.value)}
-                      disabled={ligne.mode === 'calculé'}
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <input
-                      type="text"
-                      className="w-full bg-transparent text-sm"
-                      value={formatNombre(ligne.quantite)}
-                      onChange={e => modifierLigne(index, 'quantite', e.target.value)}
-                    />
-                  </td>
-                  <td className="px-3 py-2 text-right">{formatNombre(prixUnitaire)} €</td>
-                  <td className="px-3 py-2 text-right">{formatNombre(totalHT)} €</td>
-                  <td className="px-3 py-2 text-center">
-                    <button
-                      onClick={() => supprimerLigne(index)}
-                      className="text-red-500 hover:text-red-700"
-                      title="Supprimer cette ligne"
-                    >
-                      🗑️
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+            {lignes.map((ligne, index) => (
+              <tr key={index} className="bg-white shadow-sm rounded-xl">
+                <td className="px-3 py-2">
+                  <input
+                    className="w-full bg-transparent text-sm"
+                    value={ligne.designation}
+                    onChange={e => modifierLigne(index, 'designation', e.target.value)}
+                    placeholder="Désignation"
+                  />
+                </td>
+                <td className="px-3 py-2">
+                  <input
+                    type="text"
+                    className="w-full bg-transparent text-sm"
+                    value={formatNombre(ligne.prixAchat)}
+                    onChange={e => modifierLigne(index, 'prixAchat', e.target.value)}
+                    placeholder="0"
+                  />
+                </td>
+                <td className="px-3 py-2">
+                  <input
+                    type="text"
+                    className="w-full bg-transparent text-sm"
+                    value={formatNombre(ligne.margePourcent)}
+                    onChange={e => modifierLigne(index, 'margePourcent', e.target.value)}
+                    placeholder="0"
+                  />
+                </td>
+                <td className="px-3 py-2">
+                  <input
+                    type="text"
+                    className="w-full bg-transparent text-sm"
+                    value={formatNombre(ligne.quantite)}
+                    onChange={e => modifierLigne(index, 'quantite', e.target.value)}
+                    placeholder="1"
+                  />
+                </td>
+                <td className="px-3 py-2">
+                  <select
+                    className="w-full bg-transparent text-sm"
+                    value={ligne.mode}
+                    onChange={e => modifierLigne(index, 'mode', e.target.value)}
+                  >
+                    <option value="calculé">Calculé</option>
+                    <option value="manuel">Manuel</option>
+                  </select>
+                </td>
+                <td className="px-3 py-2 text-center">
+                  <button
+                    onClick={() => supprimerLigne(index)}
+                    className="text-red-500 hover:text-red-700"
+                    title="Supprimer cette ligne"
+                  >
+                    🗑️
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
       <button
         onClick={ajouterLigne}
-        className="flex items-center gap-2 bg-white hover:bg-gray-100 text-sm text-gray-800 px-4 py-2 rounded-md border border-gray-300 shadow-sm w-fit"
+        className="cursor-pointer flex items-center gap-2 bg-white hover:bg-gray-100 text-sm text-gray-800 px-4 py-2 rounded-md border border-gray-300 shadow-sm w-fit"
       >
-        ➕ Ajouter une pièce
+        ➕ Ajouter une ligne
       </button>
 
       <div className="flex items-center gap-4 mt-4">

@@ -8,6 +8,8 @@ import type SignatureCanvas from 'react-signature-canvas';
 import BlocMainOeuvre from '@/components/BlocMainOeuvre';
 import BlocPieces from '@/components/BlocPieces';
 import Link from 'next/link';
+import RenduPDF from '@/components/pdf/RenduPDF';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 // Types
 
@@ -410,83 +412,54 @@ export default function Home() {
   };
 
   const exporterPDFSansClasses = async () => {
-    const devis = document.getElementById('devis-final');
-    if (!devis) return;
-
-    const clone = devis.cloneNode(true) as HTMLElement;
-
-    // Fix layout PDF
-    clone.style.width = '794px';
-    clone.style.minHeight = '1123px';
-    clone.style.padding = '32px';
-    clone.style.margin = '0 auto';
-    clone.style.backgroundColor = '#ffffff';
-    clone.style.fontFamily = 'Arial, sans-serif';
-    clone.style.fontSize = '14px';
-    clone.style.lineHeight = '1.5';
-    clone.style.transform = 'none';
-    clone.style.transformOrigin = 'top left';
-
-    // Nettoyage et style inline
-    clone.querySelectorAll('*').forEach(el => {
-      el.removeAttribute('class');
-
-      const element = el as HTMLElement;
-      element.style.color = '#000';
-      element.style.backgroundColor = '#fff';
-      element.style.fontFamily = 'Arial, sans-serif';
-      element.style.fontSize = '14px';
-      element.style.lineHeight = '1.5';
-
-      // Cas spécifiques
-      const tag = element.tagName.toLowerCase();
-
-      if (tag === 'table') {
-        element.style.borderCollapse = 'collapse';
-        element.style.width = '100%';
-        element.style.marginBottom = '16px';
-      }
-
-      if (tag === 'th' || tag === 'td') {
-        element.style.border = '1px solid #ccc';
-        element.style.padding = '8px';
-        element.style.backgroundColor = '#f9f9f9';
-        element.style.textAlign = 'left';
-        element.style.verticalAlign = 'top';
-      }
-
-      if (tag === 'tr') {
-        element.style.backgroundColor = '#fff';
-      }
-
-      if (tag === 'h1' || tag === 'h2') {
-        element.style.fontWeight = 'bold';
-        element.style.fontSize = '16px';
-        element.style.margin = '12px 0 6px 0';
-      }
-
-      if (tag === 'input' || tag === 'textarea') {
-        element.style.border = '1px solid #ccc';
-        element.style.padding = '6px';
-        element.style.width = '100%';
-        element.style.boxSizing = 'border-box';
-      }
-    });
-
-    // Conteneur temporaire
     const container = document.createElement('div');
     container.style.position = 'fixed';
     container.style.top = '-9999px';
     container.style.left = '0';
     container.style.zIndex = '-1';
     container.style.width = '794px';
-    container.appendChild(clone);
     document.body.appendChild(container);
 
-    // Export PDF
-    await exporterPDF(clone);
+    // Rendu HTML statique
+    const html = renderToStaticMarkup(
+      <RenduPDF
+        date={new Date().toLocaleDateString('fr-FR')}
+        titre={titre}
+        emetteur={emetteur}
+        recepteur={recepteur}
+        lignesMainOeuvre={lignesMainOeuvre.map(l => ({
+          designation: l.designation,
+          unite: 'U',
+          quantite: 1,
+          prix: l.mode === 'fixe' ? l.prixFixe : l.prixHoraire * l.heures,
+        }))}
+        lignesPieces={lignesPieces.map(l => ({
+          designation: l.designation,
+          unite: 'U',
+          quantite: l.quantite,
+          prix:
+            l.mode === 'calculé' ? l.prixAchat * (1 + l.margePourcent / 100) : l.prixManuel || 0,
+        }))}
+        totalHT={totalHT}
+        tva={tva}
+        totalTTC={totalTTC}
+        acompte={acompte}
+        tvaTaux={tvaTaux}
+        acomptePourcent={acomptePourcent}
+        mentions={mentions}
+        intro={intro}
+        conclusion={conclusion}
+        signatureClient={signatureClient || undefined}
+        signatureEmetteur={signatureEmetteur || undefined}
+      />
+    );
 
-    // Nettoyage
+    container.innerHTML = html;
+
+    // Export via html2pdf
+    const html2pdf = (await import('html2pdf.js')).default;
+    await html2pdf().set({ margin: 0 }).from(container).save();
+
     document.body.removeChild(container);
   };
 

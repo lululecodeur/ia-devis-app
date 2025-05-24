@@ -1227,6 +1227,8 @@ const exporterPDFSansClasses = async () => {
 <div className="sticky bottom-4 left-4 z-50">
   <button
   onClick={async () => {
+    alert("✅ Bouton Export cliqué !");
+
     try {
       // 🛑 Vérifie que le client est bien rempli
       if (!recepteur.nom.trim() || !recepteur.email.trim()) {

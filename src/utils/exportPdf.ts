@@ -1,10 +1,17 @@
 "use client";
 
+const debug = (msg: string) => {
+  const div = document.getElementById("debug-log");
+  if (div) {
+    div.innerHTML += `\n${msg}`;
+  }
+};
+
 export const exporterPDF = async () => {
   alert("📄 Export lancé !");
-  console.log("📄 Lancement export PDF !");
+  debug("📄 Lancement export PDF !");
   const html2pdf = (await import("html2pdf.js")).default;
-  console.log("📦 html2pdf importé !");
+  debug("📦 html2pdf importé !");
 
   const element = document.getElementById("devis-final");
 
@@ -20,9 +27,10 @@ export const exporterPDF = async () => {
     return;
   }
 
-  console.log("🎯 Élément trouvé :", element);
-  console.log("📏 Dimensions:", element.offsetWidth, "x", element.offsetHeight);
-  console.log("🧾 innerText:", element.innerText.slice(0, 100));
+  debug("🎯 Élément trouvé : " + element.id);
+debug("📏 Dimensions: " + element.offsetWidth + " x " + element.offsetHeight);
+debug("🧾 innerText: " + element.innerText.slice(0, 100));
+
 
   const today = new Date();
   const filename = `devis_${today.toLocaleDateString("fr-FR").replace(/\//g, "-")}.pdf`;

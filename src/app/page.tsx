@@ -1680,6 +1680,26 @@ const exporterPDFSansClasses = async () => {
 </div>
 </div>
 </div>
+
+<div
+  id="debug-log"
+  style={{
+    position: "fixed",
+    bottom: 0,
+    left: 0,
+    background: "#000",
+    color: "#0f0",
+    padding: "10px",
+    fontSize: "12px",
+    maxHeight: "40vh",
+    overflowY: "auto",
+    zIndex: 9999,
+    whiteSpace: "pre-line",
+  }}
+>
+  🐞 Debug log actif
+</div>
+
 </main>
 
 )}

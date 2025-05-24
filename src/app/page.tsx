@@ -1275,30 +1275,35 @@ console.log("✅ exportPDF appelée avec clone");
 
       console.log("📤 Étape 2 : fetch backend");
 
-      await fetch("http://localhost:5000/sauvegarder-devis-final", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          titre,
-          lignes,
-          total_ht_brut: totalHTBrut,
-          remise,
-          total_ht: totalHT,
-          tva,
-          total_ttc: totalTTC,
-          acompte,
-          tva_taux: tvaTaux,
-          remise_pourcent: remisePourcent,
-          acompte_pourcent: acomptePourcent,
-          mentions,
-          intro,
-          conclusion,
-          emetteur,
-          recepteur,
-          logo,
-          client_id: client_id_final,
-        }),
-      });
+      try {
+  await fetch("http://localhost:5000/sauvegarder-devis-final", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      titre,
+      lignes,
+      total_ht_brut: totalHTBrut,
+      remise,
+      total_ht: totalHT,
+      tva,
+      total_ttc: totalTTC,
+      acompte,
+      tva_taux: tvaTaux,
+      remise_pourcent: remisePourcent,
+      acompte_pourcent: acomptePourcent,
+      mentions,
+      intro,
+      conclusion,
+      emetteur,
+      recepteur,
+      logo,
+      client_id: client_id_final,
+    }),
+  });
+} catch (err) {
+  console.warn("⚠️ Backend injoignable, on continue sans lui :", err);
+}
+
 
       console.log("💾 Étape 3 : sauvegarde localStorage");
 
@@ -1394,30 +1399,35 @@ if (typeof window !== "undefined") {
       }
 
       // 📤 Envoie au backend
-      await fetch("http://localhost:5000/sauvegarder-devis-final", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          titre,
-          lignes,
-          total_ht_brut: totalHTBrut,
-          remise,
-          total_ht: totalHT,
-          tva,
-          total_ttc: totalTTC,
-          acompte,
-          tva_taux: tvaTaux,
-          remise_pourcent: remisePourcent,
-          acompte_pourcent: acomptePourcent,
-          mentions,
-          intro,
-          conclusion,
-          emetteur,
-          recepteur,
-          logo,
-          client_id: client_id_final,
-        }),
-      });
+      try {
+  await fetch("http://localhost:5000/sauvegarder-devis-final", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      titre,
+      lignes,
+      total_ht_brut: totalHTBrut,
+      remise,
+      total_ht: totalHT,
+      tva,
+      total_ttc: totalTTC,
+      acompte,
+      tva_taux: tvaTaux,
+      remise_pourcent: remisePourcent,
+      acompte_pourcent: acomptePourcent,
+      mentions,
+      intro,
+      conclusion,
+      emetteur,
+      recepteur,
+      logo,
+      client_id: client_id_final,
+    }),
+  });
+} catch (err) {
+  console.warn("⚠️ Backend injoignable, on continue sans lui :", err);
+}
+
 
       // 💾 Sauvegarde dans l'historique local
       const historiqueStr = localStorage.getItem("devisHistorique");

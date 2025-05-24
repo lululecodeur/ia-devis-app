@@ -363,9 +363,6 @@ const parserViaIA = async (texte: string) => {
 
 const exporterPDFSansClasses = async () => {
   console.log("🧠 exporterPDFSansClasses START");
-if (typeof window !== "undefined") {
-  alert("🧠 exporterPDFSansClasses START");
-}
 
   const devis = document.getElementById("devis-final");
   if (!devis) return;
@@ -373,7 +370,15 @@ if (typeof window !== "undefined") {
   // Clone
   const clone = devis.cloneNode(true) as HTMLElement;
 
-  // Nettoyage des classes et styles problématiques
+  // Fix mobile : layout A4 sans transform
+  clone.style.transform = "none";
+  clone.style.transformOrigin = "top left";
+  clone.style.width = "794px";
+  clone.style.minHeight = "1123px";
+  clone.style.padding = "24px";
+  clone.style.backgroundColor = "#fff";
+
+  // Nettoyage des classes et styles
   clone.querySelectorAll("*").forEach((el) => {
     el.removeAttribute("class");
     el.removeAttribute("style");
@@ -393,10 +398,8 @@ if (typeof window !== "undefined") {
 
   // PDF
   console.log("🧠 exportPDFSansClasses appelée");
-await exporterPDF(clone);
-console.log("✅ exportPDF appelée avec clone");
-
-
+  await exporterPDF(clone);
+  console.log("✅ exportPDF appelée avec clone");
 
   // Nettoyage
   document.body.removeChild(container);
@@ -1234,125 +1237,118 @@ console.log("✅ exportPDF appelée avec clone");
 {/* Bouton fixe en bas à gauche */}
 {mode === "devis" && !showSecteurModal &&(
 <div className="sticky bottom-4 left-4 z-50">
-<button
-  onClick={async () => {
-    console.log("✅ Bouton cliqué");
-    alert("✅ Début de la fonction onClick !");
-
-    try {
-      console.log("🪪 Étape 1 : vérif client");
-      if (!recepteur.nom.trim() || !recepteur.email.trim()) {
-        alert("❌ Merci de renseigner au minimum un nom et un email pour exporter.");
-        return;
-      }
-
-      const clientsStr = localStorage.getItem("clients");
-      const clients = clientsStr ? JSON.parse(clientsStr) : [];
-
-      const clientExistant = clients.find(
-        (c: any) =>
-          c.nom.trim() === recepteur.nom.trim() &&
-          c.email.trim() === recepteur.email.trim()
-      );
-
-      const client_id_final =
-        clientExistant?.client_id || `${recepteur.nom.trim()}-${recepteur.email.trim()}`;
-
-      const nouveauClient = {
-        ...recepteur,
-        client_id: client_id_final,
-        date: new Date().toISOString(),
-      };
-
-      const existeDeja = clients.some(
-        (c: any) => c.nom === nouveauClient.nom && c.email === nouveauClient.email
-      );
-
-      if (!existeDeja) {
-        clients.push(nouveauClient);
-        localStorage.setItem("clients", JSON.stringify(clients));
-      }
-
-      console.log("📤 Étape 2 : fetch backend");
+  <button
+    onClick={async () => {
+      console.log("✅ Bouton cliqué");
 
       try {
-  await fetch("http://localhost:5000/sauvegarder-devis-final", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      titre,
-      lignes,
-      total_ht_brut: totalHTBrut,
-      remise,
-      total_ht: totalHT,
-      tva,
-      total_ttc: totalTTC,
-      acompte,
-      tva_taux: tvaTaux,
-      remise_pourcent: remisePourcent,
-      acompte_pourcent: acomptePourcent,
-      mentions,
-      intro,
-      conclusion,
-      emetteur,
-      recepteur,
-      logo,
-      client_id: client_id_final,
-    }),
-  });
-} catch (err) {
-  console.warn("⚠️ Backend injoignable, on continue sans lui :", err);
-}
+        console.log("🪪 Étape 1 : vérif client");
 
+        if (!recepteur.nom.trim() || !recepteur.email.trim()) {
+          console.warn("❌ Nom ou email manquant.");
+          return;
+        }
 
-      console.log("💾 Étape 3 : sauvegarde localStorage");
+        const clientsStr = localStorage.getItem("clients");
+        const clients = clientsStr ? JSON.parse(clientsStr) : [];
 
-      const historiqueStr = localStorage.getItem("devisHistorique");
-      const historique = historiqueStr ? JSON.parse(historiqueStr) : [];
+        const clientExistant = clients.find(
+          (c: any) =>
+            c.nom.trim() === recepteur.nom.trim() &&
+            c.email.trim() === recepteur.email.trim()
+        );
 
-      const nouveauDevis = {
-        titre,
-        lignes,
-        total_ht_brut: totalHTBrut,
-        remise,
-        total_ht: totalHT,
-        tva,
-        total_ttc: totalTTC,
-        acompte,
-        tva_taux: tvaTaux,
-        remise_pourcent: remisePourcent,
-        acompte_pourcent: acomptePourcent,
-        mentions,
-        intro,
-        conclusion,
-        emetteur,
-        recepteur,
-        logo,
-        client_id: client_id_final,
-        date: new Date().toISOString(),
-      };
+        const client_id_final =
+          clientExistant?.client_id || `${recepteur.nom.trim()}-${recepteur.email.trim()}`;
 
-      historique.push(nouveauDevis);
-      localStorage.setItem("devisHistorique", JSON.stringify(historique));
+        const nouveauClient = {
+          ...recepteur,
+          client_id: client_id_final,
+          date: new Date().toISOString(),
+        };
 
-      console.log("📄 Étape 4 : appel PDF");
-      if (typeof window !== "undefined") alert("📢 Appel exporterPDFSansClasses !");
-      console.log("📢 Appel exporterPDFSansClasses !");
-      await exporterPDFSansClasses();
-    } catch (e) {
-      console.warn("❌ Erreur complète lors de l’export :", e);
-if (typeof window !== "undefined") {
-  alert("❌ Erreur : " + (e instanceof Error ? e.message : JSON.stringify(e)));
-}
+        const existeDeja = clients.some(
+          (c: any) => c.nom === nouveauClient.nom && c.email === nouveauClient.email
+        );
 
-    }
-  }}
-  className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-3 rounded-xl shadow flex items-center justify-center gap-2"
->
-  📄 Exporter le devis
-</button>
+        if (!existeDeja) {
+          clients.push(nouveauClient);
+          localStorage.setItem("clients", JSON.stringify(clients));
+        }
 
+        console.log("📤 Étape 2 : fetch backend");
+
+        try {
+          await fetch("http://localhost:5000/sauvegarder-devis-final", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              titre,
+              lignes,
+              total_ht_brut: totalHTBrut,
+              remise,
+              total_ht: totalHT,
+              tva,
+              total_ttc: totalTTC,
+              acompte,
+              tva_taux: tvaTaux,
+              remise_pourcent: remisePourcent,
+              acompte_pourcent: acomptePourcent,
+              mentions,
+              intro,
+              conclusion,
+              emetteur,
+              recepteur,
+              logo,
+              client_id: client_id_final,
+            }),
+          });
+        } catch (err) {
+          console.warn("⚠️ Backend injoignable, on continue sans lui :", err);
+        }
+
+        console.log("💾 Étape 3 : sauvegarde localStorage");
+
+        const historiqueStr = localStorage.getItem("devisHistorique");
+        const historique = historiqueStr ? JSON.parse(historiqueStr) : [];
+
+        const nouveauDevis = {
+          titre,
+          lignes,
+          total_ht_brut: totalHTBrut,
+          remise,
+          total_ht: totalHT,
+          tva,
+          total_ttc: totalTTC,
+          acompte,
+          tva_taux: tvaTaux,
+          remise_pourcent: remisePourcent,
+          acompte_pourcent: acomptePourcent,
+          mentions,
+          intro,
+          conclusion,
+          emetteur,
+          recepteur,
+          logo,
+          client_id: client_id_final,
+          date: new Date().toISOString(),
+        };
+
+        historique.push(nouveauDevis);
+        localStorage.setItem("devisHistorique", JSON.stringify(historique));
+
+        console.log("📄 Étape 4 : appel PDF");
+        await exporterPDFSansClasses();
+      } catch (e) {
+        console.warn("❌ Erreur complète lors de l’export :", e);
+      }
+    }}
+    className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-3 rounded-xl shadow flex items-center justify-center gap-2"
+  >
+    📄 Exporter le devis
+  </button>
 </div>
+
 )}
 
     {/* Résumé des totaux */}
@@ -1366,7 +1362,7 @@ if (typeof window !== "undefined") {
     try {
       // 🛑 Vérifie que le client est bien rempli
       if (!recepteur.nom.trim() || !recepteur.email.trim()) {
-        alert("❌ Merci de renseigner au minimum un nom et un email pour exporter.");
+        console.warn("❌ Nom ou email manquant pour l'export.");
         return;
       }
 
@@ -1398,36 +1394,35 @@ if (typeof window !== "undefined") {
         localStorage.setItem("clients", JSON.stringify(clients));
       }
 
-      // 📤 Envoie au backend
+      // 📤 Envoie au backend (non bloquant)
       try {
-  await fetch("http://localhost:5000/sauvegarder-devis-final", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      titre,
-      lignes,
-      total_ht_brut: totalHTBrut,
-      remise,
-      total_ht: totalHT,
-      tva,
-      total_ttc: totalTTC,
-      acompte,
-      tva_taux: tvaTaux,
-      remise_pourcent: remisePourcent,
-      acompte_pourcent: acomptePourcent,
-      mentions,
-      intro,
-      conclusion,
-      emetteur,
-      recepteur,
-      logo,
-      client_id: client_id_final,
-    }),
-  });
-} catch (err) {
-  console.warn("⚠️ Backend injoignable, on continue sans lui :", err);
-}
-
+        await fetch("http://localhost:5000/sauvegarder-devis-final", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            titre,
+            lignes,
+            total_ht_brut: totalHTBrut,
+            remise,
+            total_ht: totalHT,
+            tva,
+            total_ttc: totalTTC,
+            acompte,
+            tva_taux: tvaTaux,
+            remise_pourcent: remisePourcent,
+            acompte_pourcent: acomptePourcent,
+            mentions,
+            intro,
+            conclusion,
+            emetteur,
+            recepteur,
+            logo,
+            client_id: client_id_final,
+          }),
+        });
+      } catch (err) {
+        console.warn("⚠️ Backend injoignable, on continue sans lui :", err);
+      }
 
       // 💾 Sauvegarde dans l'historique local
       const historiqueStr = localStorage.getItem("devisHistorique");
@@ -1468,6 +1463,7 @@ if (typeof window !== "undefined") {
 >
   📄 Exporter le devis
 </button>
+
 
   <div className="flex justify-center mt-4">
     <Link href="/historique">

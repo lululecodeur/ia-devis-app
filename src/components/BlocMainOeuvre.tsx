@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface LigneMainOeuvre {
   designation: string;
@@ -21,6 +21,7 @@ export default function BlocMainOeuvre({
   setAfficher,
   nomCategorie,
   setNomCategorie,
+  secteurActif,
 }: {
   lignes: LigneMainOeuvre[];
   setLignes: (l: LigneMainOeuvre[]) => void;
@@ -28,7 +29,10 @@ export default function BlocMainOeuvre({
   setAfficher: (v: boolean) => void;
   nomCategorie: string;
   setNomCategorie: (v: string) => void;
+  secteurActif?: string;
 }) {
+  const [prestationsSauvegardees, setPrestationsSauvegardees] = useState<LigneMainOeuvre[]>([]);
+
   const ajouterLigne = () => {
     setLignes([
       ...lignes,
@@ -52,6 +56,32 @@ export default function BlocMainOeuvre({
     setLignes(copie);
   };
 
+  const sauvegarderLigne = (ligne: LigneMainOeuvre) => {
+    if (!secteurActif) return;
+    const cle = `prestationsMainOeuvre_${secteurActif}`;
+    const nouvelleListe = [...prestationsSauvegardees, ligne];
+    localStorage.setItem(cle, JSON.stringify(nouvelleListe));
+    setPrestationsSauvegardees(nouvelleListe);
+    alert('✅ Prestation enregistrée');
+  };
+
+  useEffect(() => {
+    if (secteurActif) {
+      const cle = `prestationsMainOeuvre_${secteurActif}`;
+      const sauvegardes = localStorage.getItem(cle);
+      if (sauvegardes) {
+        try {
+          const parsed = JSON.parse(sauvegardes);
+          if (Array.isArray(parsed)) {
+            setPrestationsSauvegardees(parsed);
+          }
+        } catch (e) {
+          console.error('Erreur chargement prestations main d’œuvre', e);
+        }
+      }
+    }
+  }, [secteurActif]);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
@@ -73,7 +103,7 @@ export default function BlocMainOeuvre({
               <th className="px-3 py-2 bg-gray-100">Prix horaire (€)</th>
               <th className="px-3 py-2 bg-gray-100">Heures</th>
               <th className="px-3 py-2 bg-gray-100">Prix fixe (€)</th>
-              <th className="px-3 py-2 bg-gray-100 rounded-r-lg text-center">🗑️</th>
+              <th className="px-3 py-2 bg-gray-100 rounded-r-lg text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -152,10 +182,17 @@ export default function BlocMainOeuvre({
                 <td className="px-3 py-2 text-center">
                   <button
                     onClick={() => supprimerLigne(index)}
-                    className="text-red-500 hover:text-red-700"
+                    className="text-red-500 hover:text-red-700 mr-2"
                     title="Supprimer cette ligne"
                   >
                     🗑️
+                  </button>
+                  <button
+                    onClick={() => sauvegarderLigne(ligne)}
+                    className="text-green-600 hover:text-green-800"
+                    title="Sauvegarder cette prestation"
+                  >
+                    💾
                   </button>
                 </td>
               </tr>
@@ -184,6 +221,62 @@ export default function BlocMainOeuvre({
           <div className="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-full shadow"></div>
         </label>
       </div>
+
+      {secteurActif && prestationsSauvegardees.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">
+            📂 Prestations enregistrées ({secteurActif})
+          </h3>
+          <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 flex flex-col gap-2">
+            {prestationsSauvegardees.map((prestation, index) => (
+              <div
+                key={index}
+                className="flex justify-between items-center border border-gray-200 p-3 rounded bg-white shadow-sm"
+              >
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-800">
+                    {prestation.designation}
+                  </span>
+                  {prestation.mode === 'fixe' ? (
+                    <span className="text-xs text-gray-500">
+                      💰 Prix fixe : {prestation.prixFixe} €
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-500">
+                      ⏱️ {prestation.prixHoraire} €/h × {prestation.heures} h
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                    onClick={() => setLignes([...lignes, { ...prestation }])}
+                  >
+                    ➕ Ajouter
+                  </button>
+                  <button
+                    className="text-sm bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200"
+                    onClick={() => {
+                      const confirm = window.confirm('🗑️ Supprimer cette prestation ?');
+                      if (!confirm) return;
+
+                      const updated = [...prestationsSauvegardees];
+                      updated.splice(index, 1);
+                      localStorage.setItem(
+                        `prestationsMainOeuvre_${secteurActif}`,
+                        JSON.stringify(updated)
+                      );
+                      setPrestationsSauvegardees(updated);
+                    }}
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

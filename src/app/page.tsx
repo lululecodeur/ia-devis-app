@@ -284,7 +284,7 @@ export default function Home() {
           designation: `[${nomPieces}] ${l.designation}`,
           unite: 'U',
           quantite: l.quantite,
-          prix: l.prixAchat * (1 + l.margePourcent / 100),
+          prix: l.mode === 'manuel' ? l.prixManuel || 0 : l.prixAchat * (1 + l.margePourcent / 100),
         }))
       : []),
 
@@ -383,10 +383,8 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (canSaveEmetteur) {
-      localStorage.setItem('emetteur', JSON.stringify(emetteur));
-    }
-  }, [emetteur, canSaveEmetteur]);
+    localStorage.setItem('emetteur', JSON.stringify(emetteur));
+  }, [emetteur]);
 
   useEffect(() => {
     if (logo) localStorage.setItem('logo', logo);
@@ -1137,6 +1135,7 @@ export default function Home() {
                           setAfficher={setAfficherMainOeuvre}
                           nomCategorie={nomMainOeuvre}
                           setNomCategorie={setNomMainOeuvre}
+                          secteurActif={secteurActif}
                         />
 
                         {/* Trait de séparation entre main d'œuvre et pièces */}
@@ -1155,6 +1154,7 @@ export default function Home() {
                           setAfficher={setAfficherPieces}
                           nomCategorie={nomPieces}
                           setNomCategorie={setNomPieces}
+                          secteurActif={secteurActif}
                         />
                       </Card>
 
@@ -2093,7 +2093,11 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                             </th>
                           </tr>
                           {lignesPieces.map((ligne, index) => {
-                            const prix = ligne.prixAchat * (1 + ligne.margePourcent / 100);
+                            const prix =
+                              ligne.mode === 'manuel'
+                                ? ligne.prixManuel || 0
+                                : ligne.prixAchat * (1 + ligne.margePourcent / 100);
+
                             return (
                               <tr key={`piece-${index}`}>
                                 <td style={{ padding: '6px', textAlign: 'center' }}>

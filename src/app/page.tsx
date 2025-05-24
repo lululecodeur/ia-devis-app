@@ -411,16 +411,6 @@ console.log("✅ exportPDF appelée avec clone");
 
   return(
 <>
-
-<button
-  onClick={async () => {
-    alert("PDF direct test !");
-    await exporterPDFSansClasses();
-  }}
->
-  🧪 TEST EXPORT PDF DIRECT
-</button>
-
 {mode === "accueil" && (
   <div className="text-center mt-20">
     <h1 className="text-3xl font-bold mb-4">Bienvenue 👋</h1>
@@ -1346,9 +1336,10 @@ console.log("✅ exportPDF appelée avec clone");
       await exporterPDFSansClasses();
     } catch (e) {
       console.warn("❌ Erreur complète lors de l’export :", e);
-      if (typeof window !== "undefined") {
-        alert("❌ Une erreur est survenue pendant l’export.");
-      }
+if (typeof window !== "undefined") {
+  alert("❌ Erreur : " + (e instanceof Error ? e.message : JSON.stringify(e)));
+}
+
     }
   }}
   className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-3 rounded-xl shadow flex items-center justify-center gap-2"

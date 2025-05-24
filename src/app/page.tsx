@@ -91,15 +91,30 @@ useEffect(() => {
         console.error("Erreur lecture clientTemp :", e);
       }
     }
+
+    // ✅ AJOUTE CE BLOC JUSTE ICI
+    const idTemp = localStorage.getItem("client_id_temp");
+    if (idTemp) {
+      const clientsStr = localStorage.getItem("clients");
+      const clients = clientsStr ? JSON.parse(clientsStr) : [];
+
+      const client = clients.find((c: any) => c.client_id === idTemp);
+      if (client) {
+        setRecepteur(client);
+      }
+
+      localStorage.removeItem("client_id_temp");
+    }
   }
 }, []);
+
 
 
 const [deviceScale, setDeviceScale] = useState(1);
 const [hasHydratedFromDevis, setHasHydratedFromDevis] = useState(false);
 const [canSaveEmetteur, setCanSaveEmetteur] = useState(false);
-const clientId = `${recepteur.nom}-${recepteur.email}`; // identifiant unique simple
 const [clientTempLoaded, setClientTempLoaded] = useState(false);
+const [clientId, setClientId] = useState(""); // <- pour garder le vrai ID du client
 
 
 
@@ -211,7 +226,7 @@ useEffect(() => {
       setTvaTaux(data.tva_taux || 20);
       setRemisePourcent(data.remise_pourcent || 0);
       setAcomptePourcent(data.acompte_pourcent || 30);
-      setRecepteur({ nom: "", adresse: "", email: "", tel: "" });
+      setRecepteur(data.recepteur || { nom: "", adresse: "", email: "", tel: "" });
       setHasHydratedFromDevis(true);
       localStorage.removeItem("devisEnCours");
            setCanSaveEmetteur(true); // autorise la sauvegarde ensuite
@@ -729,31 +744,44 @@ const exporterPDFSansClasses = async () => {
   </div>
 <button
   onClick={() => {
-    try {
-      const clientsStr = localStorage.getItem("clients");
-      const clients = clientsStr ? JSON.parse(clientsStr) : [];
-
-      const nouveauClient = {
-        ...recepteur,
-        date: new Date().toISOString(),
-      };
-
-      const existeDeja = clients.some(
-        (c: any) => c.nom === nouveauClient.nom && c.email === nouveauClient.email
-      );
-
-      if (!existeDeja) {
-        clients.push(nouveauClient);
-        localStorage.setItem("clients", JSON.stringify(clients));
-        alert("✅ Infos client enregistrées !");
-      } else {
-        alert("ℹ️ Client déjà enregistré.");
-      }
-    } catch (e) {
-      console.warn("❌ Erreur lors de la sauvegarde :", e);
-      alert("Erreur lors de l'enregistrement du client.");
+  try {
+    // 🔒 Vérif basique
+    if (!recepteur.nom.trim() || !recepteur.email.trim()) {
+      alert("❌ Merci de renseigner au minimum un nom **et un email** pour le client.");
+      return;
     }
-  }}
+
+    const clientsStr = localStorage.getItem("clients");
+    const clients = clientsStr ? JSON.parse(clientsStr) : [];
+
+    const generatedId = `${recepteur.nom.trim()}-${recepteur.email.trim()}`;
+
+    const nouveauClient = {
+      ...recepteur,
+      client_id: generatedId,
+      date: new Date().toISOString(),
+    };
+
+    const existeDeja = clients.some(
+      (c: any) => c.nom === nouveauClient.nom && c.email === nouveauClient.email
+    );
+
+    if (!existeDeja) {
+      clients.push(nouveauClient);
+      localStorage.setItem("clients", JSON.stringify(clients));
+      alert("✅ Infos client enregistrées !");
+    } else {
+      alert("ℹ️ Client déjà enregistré.");
+    }
+
+    // ✅ On applique l'ID seulement à la fin, si tout est bon
+    localStorage.setItem("client_id_temp", generatedId);
+  } catch (e) {
+    console.warn("❌ Erreur lors de la sauvegarde :", e);
+    alert("Erreur lors de l'enregistrement du client.");
+  }
+}}
+
   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm w-full mb-2"
 >
   💾 Enregistrer les infos client
@@ -1198,29 +1226,43 @@ const exporterPDFSansClasses = async () => {
 {mode === "devis" && !showSecteurModal &&(
 <div className="sticky bottom-4 left-4 z-50">
   <button
-    onClick={async () => {
-      // Sauvegarde client auto lors de l’export
-try {
-  const clientsStr = localStorage.getItem("clients");
-  const clients = clientsStr ? JSON.parse(clientsStr) : [];
+  onClick={async () => {
+    try {
+      // 🛑 Vérifie que le client est bien rempli
+      if (!recepteur.nom.trim() || !recepteur.email.trim()) {
+        alert("❌ Merci de renseigner au minimum un nom et un email pour exporter.");
+        return;
+      }
 
-  const nouveauClient = {
-    ...recepteur,
-    date: new Date().toISOString(),
-  };
+      // 🔎 Récupère ou génère un client_id unique
+      const clientsStr = localStorage.getItem("clients");
+      const clients = clientsStr ? JSON.parse(clientsStr) : [];
 
-  const existeDeja = clients.some(
-    (c: any) => c.nom === nouveauClient.nom && c.email === nouveauClient.email
-  );
+      const clientExistant = clients.find(
+        (c: any) =>
+          c.nom.trim() === recepteur.nom.trim() &&
+          c.email.trim() === recepteur.email.trim()
+      );
 
-  if (!existeDeja) {
-    clients.push(nouveauClient);
-    localStorage.setItem("clients", JSON.stringify(clients));
-  }
-} catch (e) {
-  console.warn("❌ Erreur lors de la sauvegarde client automatique :", e);
-}
+      const client_id_final = clientExistant?.client_id || `${recepteur.nom.trim()}-${recepteur.email.trim()}`;
 
+      // 🗂 Enregistre le client si pas encore présent
+      const nouveauClient = {
+        ...recepteur,
+        client_id: client_id_final,
+        date: new Date().toISOString(),
+      };
+
+      const existeDeja = clients.some(
+        (c: any) => c.nom === nouveauClient.nom && c.email === nouveauClient.email
+      );
+
+      if (!existeDeja) {
+        clients.push(nouveauClient);
+        localStorage.setItem("clients", JSON.stringify(clients));
+      }
+
+      // 📤 Envoie au backend
       await fetch("http://localhost:5000/sauvegarder-devis-final", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1242,15 +1284,49 @@ try {
           emetteur,
           recepteur,
           logo,
-          client_id: clientId,
+          client_id: client_id_final,
         }),
       });
+
+      // 💾 Sauvegarde dans l'historique local
+      const historiqueStr = localStorage.getItem("devisHistorique");
+      const historique = historiqueStr ? JSON.parse(historiqueStr) : [];
+
+      const nouveauDevis = {
+        titre,
+        lignes,
+        total_ht_brut: totalHTBrut,
+        remise,
+        total_ht: totalHT,
+        tva,
+        total_ttc: totalTTC,
+        acompte,
+        tva_taux: tvaTaux,
+        remise_pourcent: remisePourcent,
+        acompte_pourcent: acomptePourcent,
+        mentions,
+        intro,
+        conclusion,
+        emetteur,
+        recepteur,
+        logo,
+        client_id: client_id_final,
+        date: new Date().toISOString(),
+      };
+
+      historique.push(nouveauDevis);
+      localStorage.setItem("devisHistorique", JSON.stringify(historique));
+
+      // 📄 Génère le PDF
       await exporterPDFSansClasses();
-    }}
-    className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-3 rounded-xl shadow flex items-center justify-center gap-2"
-  >
-    📄 Exporter le devis
-  </button>
+    } catch (e) {
+      console.warn("❌ Erreur complète lors de l’export :", e);
+    }
+  }}
+  className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-3 rounded-xl shadow flex items-center justify-center gap-2"
+>
+  📄 Exporter le devis
+</button>
 </div>
 )}
 
@@ -1261,45 +1337,107 @@ try {
 <Card title="📤 Export & Historique">
   <div className="flex flex-col gap-4">
   <button
-    onClick={async () => {
-      // Sauvegarde client auto lors de l’export
-try {
-  const clientsStr = localStorage.getItem("clients");
-  const clients = clientsStr ? JSON.parse(clientsStr) : [];
+  onClick={async () => {
+    try {
+      // 🛑 Vérifie que le client est bien rempli
+      if (!recepteur.nom.trim() || !recepteur.email.trim()) {
+        alert("❌ Merci de renseigner au minimum un nom et un email pour exporter.");
+        return;
+      }
 
-  const nouveauClient = {
-    ...recepteur,
-    date: new Date().toISOString(),
-  };
+      // 🔎 Récupère ou génère un client_id unique
+      const clientsStr = localStorage.getItem("clients");
+      const clients = clientsStr ? JSON.parse(clientsStr) : [];
 
-  const existeDeja = clients.some(
-    (c: any) => c.nom === nouveauClient.nom && c.email === nouveauClient.email
-  );
+      const clientExistant = clients.find(
+        (c: any) =>
+          c.nom.trim() === recepteur.nom.trim() &&
+          c.email.trim() === recepteur.email.trim()
+      );
 
-  if (!existeDeja) {
-    clients.push(nouveauClient);
-    localStorage.setItem("clients", JSON.stringify(clients));
-  }
-} catch (e) {
-  console.warn("❌ Erreur lors de la sauvegarde client automatique :", e);
-}
+      const client_id_final = clientExistant?.client_id || `${recepteur.nom.trim()}-${recepteur.email.trim()}`;
 
+      // 🗂 Enregistre le client si pas encore présent
+      const nouveauClient = {
+        ...recepteur,
+        client_id: client_id_final,
+        date: new Date().toISOString(),
+      };
+
+      const existeDeja = clients.some(
+        (c: any) => c.nom === nouveauClient.nom && c.email === nouveauClient.email
+      );
+
+      if (!existeDeja) {
+        clients.push(nouveauClient);
+        localStorage.setItem("clients", JSON.stringify(clients));
+      }
+
+      // 📤 Envoie au backend
       await fetch("http://localhost:5000/sauvegarder-devis-final", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          titre, lignes, total_ht_brut: totalHTBrut, remise, total_ht: totalHT,
-          tva, total_ttc: totalTTC, acompte, tva_taux: tvaTaux,
-          remise_pourcent: remisePourcent, acompte_pourcent: acomptePourcent,
-          mentions, intro, conclusion, emetteur, recepteur, logo,
+          titre,
+          lignes,
+          total_ht_brut: totalHTBrut,
+          remise,
+          total_ht: totalHT,
+          tva,
+          total_ttc: totalTTC,
+          acompte,
+          tva_taux: tvaTaux,
+          remise_pourcent: remisePourcent,
+          acompte_pourcent: acomptePourcent,
+          mentions,
+          intro,
+          conclusion,
+          emetteur,
+          recepteur,
+          logo,
+          client_id: client_id_final,
         }),
       });
+
+      // 💾 Sauvegarde dans l'historique local
+      const historiqueStr = localStorage.getItem("devisHistorique");
+      const historique = historiqueStr ? JSON.parse(historiqueStr) : [];
+
+      const nouveauDevis = {
+        titre,
+        lignes,
+        total_ht_brut: totalHTBrut,
+        remise,
+        total_ht: totalHT,
+        tva,
+        total_ttc: totalTTC,
+        acompte,
+        tva_taux: tvaTaux,
+        remise_pourcent: remisePourcent,
+        acompte_pourcent: acomptePourcent,
+        mentions,
+        intro,
+        conclusion,
+        emetteur,
+        recepteur,
+        logo,
+        client_id: client_id_final,
+        date: new Date().toISOString(),
+      };
+
+      historique.push(nouveauDevis);
+      localStorage.setItem("devisHistorique", JSON.stringify(historique));
+
+      // 📄 Génère le PDF
       await exporterPDFSansClasses();
-    }}
-    className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-3 rounded-xl shadow w-full flex items-center justify-center gap-2"
-  >
-    📄 Exporter le devis en PDF
-  </button>
+    } catch (e) {
+      console.warn("❌ Erreur complète lors de l’export :", e);
+    }
+  }}
+  className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-3 rounded-xl shadow flex items-center justify-center gap-2"
+>
+  📄 Exporter le devis
+</button>
 
   <div className="flex justify-center mt-4">
     <Link href="/historique">

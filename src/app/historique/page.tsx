@@ -1,7 +1,6 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -39,23 +38,30 @@ export default function HistoriquePage() {
   const router = useRouter();
 
   useEffect(() => {
-    fetch('http://localhost:5000/devis-final')
-      .then((res) => res.json())
-      .then((data: unknown) => {
-        setDevisList(data as Devis[]);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Erreur fetch historique :', err);
-        setLoading(false);
-      });
+    const stored = localStorage.getItem("devisHistorique");
+if (stored) {
+  try {
+    const data = JSON.parse(stored);
+    setDevisList(data.reverse()); // 🔁 ordre du plus récent au plus ancien
+  } catch (err) {
+    console.error("Erreur parsing historique :", err);
+  }
+}
+
+    setLoading(false);
   }, []);
 
   const reutiliserDevis = (devis: Devis) => {
-  localStorage.setItem('devisEnCours', JSON.stringify(devis));
-  router.push('/?mode=devis'); // 👈 redirige vers mode "devis"
-};
+    localStorage.setItem('devisEnCours', JSON.stringify(devis));
+    router.push('/?mode=devis');
+  };
 
+  const supprimerDevis = (index: number) => {
+    const copie = [...devisList];
+    copie.splice(index, 1);
+    setDevisList(copie);
+    localStorage.setItem("devisHistorique", JSON.stringify(copie));
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-8">
@@ -79,23 +85,34 @@ export default function HistoriquePage() {
                     Client : {devis.recepteur?.nom || 'Non spécifié'}
                   </p>
                 </div>
-                <button
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  onClick={() => reutiliserDevis(devis)}
-                >
-                  📝 Réutiliser
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    onClick={() => reutiliserDevis(devis)}
+                  >
+                    📝 Réutiliser
+                  </button>
+                  <button
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                    onClick={() => supprimerDevis(index)}
+                  >
+                    🗑️ Supprimer
+                  </button>
+                </div>
               </div>
             </li>
           ))}
         </ul>
       )}
 
-      <div className="mt-8">
-        <Link href="/" className="text-blue-600 underline">
-          ← Retour à la création de devis
-        </Link>
-      </div>
+      <div className="sticky bottom-4 z-50 flex justify-center mt-8">
+  <Link href="/?mode=devis">
+    <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm">
+      ← Retour à la création de devis
+    </button>
+  </Link>
+</div>
+
     </div>
   );
 }

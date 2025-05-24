@@ -9,6 +9,7 @@ interface Client {
   email: string;
   tel: string;
   date: string;
+  client_id?: string;
 }
 
 interface Devis {
@@ -27,9 +28,11 @@ export default function ClientsPage() {
 
   useEffect(() => {
     const stored = localStorage.getItem("clients");
-    if (stored) {
-      setClients(JSON.parse(stored));
-    }
+if (stored) {
+  const parsed = JSON.parse(stored);
+  setClients(parsed.reverse()); // 🔁 inverse la liste
+}
+
   }, []);
 
   const sauvegarderClient = (index: number) => {
@@ -45,7 +48,7 @@ export default function ClientsPage() {
       localStorage.setItem("clients", JSON.stringify(updatedClients));
 
       const client = updatedClients[index];
-      const clientId = `${client.nom.trim()}-${client.email.trim()}`;
+      const clientId = client.client_id;
 
       const historique = localStorage.getItem("devisHistorique");
       if (historique) {
@@ -78,11 +81,12 @@ export default function ClientsPage() {
 
   const reutiliserClient = (client: Client) => {
     localStorage.setItem("clientTemp", JSON.stringify(client));
+    localStorage.setItem("client_id_temp", client.client_id || "");
     window.location.replace("/?mode=devis");
   };
 
   const getDevisPourClient = (client: Client): Devis[] => {
-    const clientId = `${client.nom.trim()}-${client.email.trim()}`;
+    const clientId = client.client_id;
     const historiqueStr = localStorage.getItem("devisHistorique");
     if (!historiqueStr) return [];
     try {
@@ -94,7 +98,7 @@ export default function ClientsPage() {
   };
 
   return (
-    <main className="p-8 max-w-3xl mx-auto min-h-screen bg-gray-50">
+    <main className="p-8 max-w-3xl mx-auto min-h-screen bg-gray-50 text-black">
       <h1 className="text-3xl font-bold mb-6">📋 Historique Clients</h1>
 
       {showConfirmation && (
@@ -109,10 +113,10 @@ export default function ClientsPage() {
         clients.map((client, index) => (
           <div
             key={index}
-            className="bg-white border rounded-xl p-6 mb-6 shadow space-y-2"
+            className="bg-white border rounded-xl p-6 mb-6 shadow space-y-2 text-black"
           >
             <input
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded text-black"
               value={modifs[index]?.nom ?? client.nom}
               onChange={(e) =>
                 setModifs({
@@ -126,7 +130,7 @@ export default function ClientsPage() {
               placeholder="Nom"
             />
             <input
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded text-black"
               value={modifs[index]?.adresse ?? client.adresse}
               onChange={(e) =>
                 setModifs({
@@ -140,7 +144,7 @@ export default function ClientsPage() {
               placeholder="Adresse"
             />
             <input
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded text-black"
               value={modifs[index]?.email ?? client.email}
               onChange={(e) =>
                 setModifs({
@@ -154,7 +158,7 @@ export default function ClientsPage() {
               placeholder="Email"
             />
             <input
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded text-black"
               value={modifs[index]?.tel ?? client.tel}
               onChange={(e) =>
                 setModifs({
@@ -189,7 +193,6 @@ export default function ClientsPage() {
               </button>
             </div>
 
-            {/* 📄 Liste des devis associés */}
             <div className="mt-4">
               <p className="text-sm font-semibold mb-1">📄 Devis liés :</p>
               {getDevisPourClient(client).length === 0 ? (
@@ -204,6 +207,9 @@ export default function ClientsPage() {
                         className="ml-2 text-blue-600 hover:underline text-xs"
                         onClick={() => {
                           localStorage.setItem("devisEnCours", JSON.stringify(devis));
+                          if (devis.client_id) {
+                            localStorage.setItem("client_id_temp", devis.client_id);
+                          }
                           window.location.href = "/?mode=devis";
                         }}
                       >
@@ -218,13 +224,14 @@ export default function ClientsPage() {
         ))
       )}
 
-      <div className="mt-8 text-center">
-        <Link href="/?mode=devis">
-          <button className="text-blue-600 underline text-sm">
-            ← Retour au générateur de devis
-          </button>
-        </Link>
-      </div>
+      <div className="sticky bottom-4 z-50 flex justify-center mt-8">
+  <Link href="/?mode=devis">
+    <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm">
+      ← Retour au générateur de devis
+    </button>
+  </Link>
+</div>
+
     </main>
   );
 }

@@ -427,17 +427,50 @@ export default function Home() {
     clone.style.transform = 'none';
     clone.style.transformOrigin = 'top left';
 
-    // Nettoyage des styles internes
+    // Nettoyage et style inline
     clone.querySelectorAll('*').forEach(el => {
-      el.removeAttribute('class'); // on vire les classes Tailwind (optionnel mais propre)
+      el.removeAttribute('class');
 
-      // Applique les styles en dur dans le PDF
       const element = el as HTMLElement;
       element.style.color = '#000';
       element.style.backgroundColor = '#fff';
       element.style.fontFamily = 'Arial, sans-serif';
       element.style.fontSize = '14px';
       element.style.lineHeight = '1.5';
+
+      // Cas spécifiques
+      const tag = element.tagName.toLowerCase();
+
+      if (tag === 'table') {
+        element.style.borderCollapse = 'collapse';
+        element.style.width = '100%';
+        element.style.marginBottom = '16px';
+      }
+
+      if (tag === 'th' || tag === 'td') {
+        element.style.border = '1px solid #ccc';
+        element.style.padding = '8px';
+        element.style.backgroundColor = '#f9f9f9';
+        element.style.textAlign = 'left';
+        element.style.verticalAlign = 'top';
+      }
+
+      if (tag === 'tr') {
+        element.style.backgroundColor = '#fff';
+      }
+
+      if (tag === 'h1' || tag === 'h2') {
+        element.style.fontWeight = 'bold';
+        element.style.fontSize = '16px';
+        element.style.margin = '12px 0 6px 0';
+      }
+
+      if (tag === 'input' || tag === 'textarea') {
+        element.style.border = '1px solid #ccc';
+        element.style.padding = '6px';
+        element.style.width = '100%';
+        element.style.boxSizing = 'border-box';
+      }
     });
 
     // Conteneur temporaire

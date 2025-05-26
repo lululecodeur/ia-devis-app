@@ -1850,7 +1850,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                                 }),
                               }
                             );
-
+                            if (!res.ok) throw new Error('Erreur HTTP: ' + res.status); // ✅ log plus clair
                             const blob = await res.blob();
                             const url = window.URL.createObjectURL(blob);
                             const a = document.createElement('a');

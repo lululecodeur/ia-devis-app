@@ -1710,6 +1710,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                       <button
                         onClick={async () => {
                           try {
+                            // ✅ Vérifs de base
                             if (!recepteur.nom.trim() || !recepteur.email.trim()) {
                               alert('❌ Nom ou email manquant.');
                               return;
@@ -1720,6 +1721,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                               return;
                             }
 
+                            // ✅ Gestion client
                             const clientsStr = localStorage.getItem('clients');
                             const clients = clientsStr ? JSON.parse(clientsStr) : [];
 
@@ -1739,49 +1741,49 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                               date: new Date().toISOString(),
                             };
 
-                            const existeDeja = clients.some(
-                              (c: any) =>
-                                c.nom === nouveauClient.nom && c.email === nouveauClient.email
-                            );
-
-                            if (!existeDeja) {
+                            if (!clientExistant) {
                               clients.push(nouveauClient);
                               localStorage.setItem('clients', JSON.stringify(clients));
                             }
 
+                            // ✅ Sauvegarde backend (si disponible)
                             try {
-                              await fetch('http://localhost:5000/sauvegarder-devis-final', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  titre,
-                                  lignesFinales,
-                                  total_ht_brut: totalHTBrut,
-                                  remise,
-                                  total_ht: totalHT,
-                                  tva,
-                                  total_ttc: totalTTC,
-                                  acompte,
-                                  tva_taux: tvaTaux,
-                                  remise_pourcent: remisePourcent,
-                                  acompte_pourcent: acomptePourcent,
-                                  mentions,
-                                  intro,
-                                  conclusion,
-                                  emetteur,
-                                  recepteur,
-                                  logo,
-                                  client_id: client_id_final,
-                                }),
-                              });
+                              await fetch(
+                                `${process.env.NEXT_PUBLIC_API_URL}/sauvegarder-devis-final`,
+                                {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    titre,
+                                    lignesFinales,
+                                    total_ht_brut: totalHTBrut,
+                                    remise,
+                                    total_ht: totalHT,
+                                    tva,
+                                    total_ttc: totalTTC,
+                                    acompte,
+                                    tva_taux: tvaTaux,
+                                    remise_pourcent: remisePourcent,
+                                    acompte_pourcent: acomptePourcent,
+                                    mentions,
+                                    intro,
+                                    conclusion,
+                                    emetteur,
+                                    recepteur,
+                                    logo,
+                                    client_id: client_id_final,
+                                  }),
+                                }
+                              );
                             } catch (err) {
                               console.warn('⚠️ Erreur sauvegarde backend :', err);
                             }
 
+                            // ✅ Sauvegarde historique local
                             const historiqueStr = localStorage.getItem('devisHistorique');
                             const historique = historiqueStr ? JSON.parse(historiqueStr) : [];
 
-                            const nouveauDevis = {
+                            historique.push({
                               titre,
                               lignesFinales,
                               total_ht_brut: totalHTBrut,
@@ -1802,22 +1804,15 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                               client_id: client_id_final,
                               date: new Date().toISOString(),
                               numeroDevis,
-                            };
+                            });
 
-                            historique.push(nouveauDevis);
                             localStorage.setItem('devisHistorique', JSON.stringify(historique));
 
-                            await new Promise(resolve => setTimeout(resolve, 0));
+                            await new Promise(resolve => setTimeout(resolve, 0)); // React flush
 
                             const devisElement = document.getElementById('devis-final');
-
                             if (!devisElement) {
                               alert('❌ Impossible de trouver le bloc #devis-final.');
-                              return;
-                            }
-
-                            if (devisElement.outerHTML.includes('test local pdf')) {
-                              alert('❌ Le contenu du devis semble vide ou invalide.');
                               return;
                             }
 
@@ -1837,7 +1832,8 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
         </html>
       `;
 
-                            console.log('🚀 HTML envoyé au backend :', html);
+                            console.log('🚀 HTML envoyé au backend :', html.slice(0, 300));
+                            console.log('📡 URL API :', process.env.NEXT_PUBLIC_API_URL);
 
                             const res = await fetch(
                               `${process.env.NEXT_PUBLIC_API_URL}/generate-pdf`,
@@ -1850,14 +1846,22 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                                 }),
                               }
                             );
-                            if (!res.ok) throw new Error('Erreur HTTP: ' + res.status); // ✅ log plus clair
+
+                            console.log('⬅️ Statut réponse PDF :', res.status);
+                            if (!res.ok) {
+                              const text = await res.text();
+                              console.error('❌ Erreur backend :', res.status, text);
+                              alert('❌ Le serveur PDF a retourné une erreur.');
+                              return;
+                            }
+
                             const blob = await res.blob();
-                            const url = window.URL.createObjectURL(blob);
+                            const url = URL.createObjectURL(blob);
                             const a = document.createElement('a');
                             a.href = url;
-                            a.download = 'devis.pdf';
+                            a.download = `devis-${numeroDevis || 'sans-numero'}.pdf`;
                             a.click();
-                            window.URL.revokeObjectURL(url);
+                            URL.revokeObjectURL(url);
 
                             alert('✅ Devis exporté avec succès !');
                           } catch (e) {

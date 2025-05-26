@@ -1815,22 +1815,41 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                               alert('❌ Impossible de trouver le bloc #devis-final.');
                               return;
                             }
-
                             const html = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <style>
-              * { font-family: Arial, sans-serif; }
-              body { padding: 2rem; }
-            </style>
-          </head>
-          <body>
-            ${devisElement.outerHTML}
-          </body>
-        </html>
-      `;
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: white;
+        width: 100%;
+        height: 100%;
+      }
+
+      * {
+        font-family: Arial, sans-serif;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      #devis-final {
+        width: 794px; /* A4 largeur en px à 96dpi */
+        min-height: 1123px; /* A4 hauteur */
+        margin: 0 auto;
+        padding: 32px;
+        background: white;
+        box-shadow: 0 0 0 transparent; /* pour éviter bordures dans PDF */
+      }
+    </style>
+  </head>
+  <body>
+    ${devisElement.outerHTML}
+  </body>
+</html>
+`;
 
                             console.log('🚀 HTML envoyé au backend :', html.slice(0, 300));
                             console.log('📡 URL API :', process.env.NEXT_PUBLIC_API_URL);
@@ -1871,7 +1890,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                         }}
                         className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-3 rounded-xl shadow flex items-center justify-center gap-2"
                       >
-                        Exporter le devisssss
+                        Exporter le deviss
                       </button>
                     </div>
                   )}
@@ -1885,13 +1904,18 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                       <button
                         onClick={async () => {
                           try {
-                            // 🛑 Vérifie que le client est bien rempli
+                            // ✅ Vérifs de base
                             if (!recepteur.nom.trim() || !recepteur.email.trim()) {
-                              alert("❌ Nom ou email manquant pour l'export.");
+                              alert('❌ Nom ou email manquant.');
                               return;
                             }
 
-                            // 🔎 Récupère ou génère un client_id unique
+                            if (!lignesFinales || lignesFinales.length === 0) {
+                              alert('❌ Aucune ligne dans le devis.');
+                              return;
+                            }
+
+                            // ✅ Gestion client
                             const clientsStr = localStorage.getItem('clients');
                             const clients = clientsStr ? JSON.parse(clientsStr) : [];
 
@@ -1905,58 +1929,55 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                               clientExistant?.client_id ||
                               `${recepteur.nom.trim()}-${recepteur.email.trim()}`;
 
-                            // 🗂 Enregistre le client si pas encore présent
                             const nouveauClient = {
                               ...recepteur,
                               client_id: client_id_final,
                               date: new Date().toISOString(),
                             };
 
-                            const existeDeja = clients.some(
-                              (c: any) =>
-                                c.nom === nouveauClient.nom && c.email === nouveauClient.email
-                            );
-
-                            if (!existeDeja) {
+                            if (!clientExistant) {
                               clients.push(nouveauClient);
                               localStorage.setItem('clients', JSON.stringify(clients));
                             }
 
-                            // 📤 Envoie au backend (non bloquant)
+                            // ✅ Sauvegarde backend (si disponible)
                             try {
-                              await fetch('http://localhost:5000/sauvegarder-devis-final', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  titre,
-                                  lignesFinales,
-                                  total_ht_brut: totalHTBrut,
-                                  remise,
-                                  total_ht: totalHT,
-                                  tva,
-                                  total_ttc: totalTTC,
-                                  acompte,
-                                  tva_taux: tvaTaux,
-                                  remise_pourcent: remisePourcent,
-                                  acompte_pourcent: acomptePourcent,
-                                  mentions,
-                                  intro,
-                                  conclusion,
-                                  emetteur,
-                                  recepteur,
-                                  logo,
-                                  client_id: client_id_final,
-                                }),
-                              });
+                              await fetch(
+                                `${process.env.NEXT_PUBLIC_API_URL}/sauvegarder-devis-final`,
+                                {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    titre,
+                                    lignesFinales,
+                                    total_ht_brut: totalHTBrut,
+                                    remise,
+                                    total_ht: totalHT,
+                                    tva,
+                                    total_ttc: totalTTC,
+                                    acompte,
+                                    tva_taux: tvaTaux,
+                                    remise_pourcent: remisePourcent,
+                                    acompte_pourcent: acomptePourcent,
+                                    mentions,
+                                    intro,
+                                    conclusion,
+                                    emetteur,
+                                    recepteur,
+                                    logo,
+                                    client_id: client_id_final,
+                                  }),
+                                }
+                              );
                             } catch (err) {
-                              console.warn('⚠️ Backend injoignable, on continue sans lui.');
+                              console.warn('⚠️ Erreur sauvegarde backend :', err);
                             }
 
-                            // 💾 Sauvegarde dans l'historique local
+                            // ✅ Sauvegarde historique local
                             const historiqueStr = localStorage.getItem('devisHistorique');
                             const historique = historiqueStr ? JSON.parse(historiqueStr) : [];
 
-                            const nouveauDevis = {
+                            historique.push({
                               titre,
                               lignesFinales,
                               total_ht_brut: totalHTBrut,
@@ -1976,22 +1997,95 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                               logo,
                               client_id: client_id_final,
                               date: new Date().toISOString(),
-                            };
+                              numeroDevis,
+                            });
 
-                            historique.push(nouveauDevis);
                             localStorage.setItem('devisHistorique', JSON.stringify(historique));
 
-                            // 📄 Génère le PDF
-                            await imprimerPDFViaPrintJS();
+                            await new Promise(resolve => setTimeout(resolve, 0)); // React flush
+
+                            const devisElement = document.getElementById('devis-final');
+                            if (!devisElement) {
+                              alert('❌ Impossible de trouver le bloc #devis-final.');
+                              return;
+                            }
+                            const html = `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: white;
+        width: 100%;
+        height: 100%;
+      }
+
+      * {
+        font-family: Arial, sans-serif;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      #devis-final {
+        width: 794px; /* A4 largeur en px à 96dpi */
+        min-height: 1123px; /* A4 hauteur */
+        margin: 0 auto;
+        padding: 32px;
+        background: white;
+        box-shadow: 0 0 0 transparent; /* pour éviter bordures dans PDF */
+      }
+    </style>
+  </head>
+  <body>
+    ${devisElement.outerHTML}
+  </body>
+</html>
+`;
+
+                            console.log('🚀 HTML envoyé au backend :', html.slice(0, 300));
+                            console.log('📡 URL API :', process.env.NEXT_PUBLIC_API_URL);
+
+                            const res = await fetch(
+                              `${process.env.NEXT_PUBLIC_API_URL}/generate-pdf`,
+                              {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  html,
+                                  filename: `devis-${numeroDevis || 'sans-numero'}.pdf`,
+                                }),
+                              }
+                            );
+
+                            console.log('⬅️ Statut réponse PDF :', res.status);
+                            if (!res.ok) {
+                              const text = await res.text();
+                              console.error('❌ Erreur backend :', res.status, text);
+                              alert('❌ Le serveur PDF a retourné une erreur.');
+                              return;
+                            }
+
+                            const blob = await res.blob();
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `devis-${numeroDevis || 'sans-numero'}.pdf`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+
+                            alert('✅ Devis exporté avec succès !');
                           } catch (e) {
-                            alert('❌ Erreur complète lors de l’export :');
+                            alert('❌ Erreur complète lors de l’export.');
+                            console.error(e);
                           }
                         }}
                         className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-3 rounded-xl shadow flex items-center justify-center gap-2"
                       >
-                        📄 Exporter le devis
+                        Exporter le deviss
                       </button>
-
                       <div className="flex justify-center mt-4">
                         <Link href="/historique">
                           <button className="bg-gray-100 hover:bg-gray-200 text-sm text-gray-800 px-4 py-2 rounded-md border border-gray-300 shadow-sm">

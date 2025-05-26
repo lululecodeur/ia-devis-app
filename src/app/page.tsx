@@ -1871,7 +1871,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                         }}
                         className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-3 rounded-xl shadow flex items-center justify-center gap-2"
                       >
-                        Exporter le devi
+                        Exporter le devisssss
                       </button>
                     </div>
                   )}

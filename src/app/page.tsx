@@ -71,6 +71,61 @@ interface CategorieSauvegardee {
 }
 
 // Totaux
+const imprimerPDFViaPrintJS = async () => {
+  const { default: printJS } = await import('print-js');
+
+  const devis = document.getElementById('devis-final');
+  if (!devis) {
+    alert('❌ Devis introuvable pour impression.');
+    return;
+  }
+
+  // Crée un clone exact du rendu final
+  const clone = devis.cloneNode(true) as HTMLElement;
+
+  // On retire tout bord extérieur
+  clone.style.boxShadow = 'none';
+  clone.style.border = 'none';
+  clone.style.margin = '0 auto';
+
+  // Conteneur invisible
+  const wrapper = document.createElement('div');
+  wrapper.id = 'print-container';
+  wrapper.style.position = 'fixed';
+  wrapper.style.top = '-9999px';
+  wrapper.style.left = '0';
+  wrapper.style.zIndex = '-1';
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  printJS({
+    printable: clone,
+    type: 'html',
+    scanStyles: true, // ✅ applique les classes (ex: Tailwind)
+    targetStyles: ['*'], // récupère tous les styles actifs
+    style: `
+  @page { margin: 0; }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  th[colspan] {
+    background-color: #f2f2f2 !important;
+  }
+
+  th {
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+`,
+
+    documentTitle: 'Devis imprimé',
+    onPrintDialogClose: () => {
+      wrapper.remove(); // nettoyage DOM
+    },
+  });
+};
 
 const exporterPDFSansClasses = async () => {
   const devis = document.getElementById('devis-final');
@@ -91,8 +146,58 @@ const exporterPDFSansClasses = async () => {
   clone.style.transform = 'none';
   clone.style.transformOrigin = 'top left';
 
+  // Supprimer classes
   clone.querySelectorAll('*').forEach(el => el.removeAttribute('class'));
 
+  // Appliquer style uniquement aux tableaux de prestations
+  clone.querySelectorAll('table').forEach(table => {
+    const isTotaux = table.innerHTML.includes('Total TTC');
+    if (!isTotaux) {
+      const t = table as HTMLElement;
+      t.style.tableLayout = 'fixed';
+      t.style.width = '100%';
+      t.style.borderCollapse = 'collapse';
+    }
+  });
+
+  // Corriger les cellules
+  clone.querySelectorAll('td, th').forEach(el => {
+    const cell = el as HTMLTableCellElement;
+    const content = cell.innerHTML.trim();
+
+    // Empêche cellule vide
+    if (!content) {
+      cell.innerHTML = '&nbsp;';
+    }
+
+    // Vrai centrage vertical via flexbox (sauf titres colSpan)
+    const isTitre = cell.colSpan && cell.colSpan > 1;
+
+    if (!isTitre) {
+      const wrapped = `<div style="display:flex; align-items:center; justify-content:center; height:100%;">${content}</div>`;
+      cell.innerHTML = wrapped;
+    }
+
+    // Styles de base
+    cell.style.padding = '6px 8px';
+    cell.style.height = '40px';
+    cell.style.minHeight = '40px';
+    cell.style.verticalAlign = 'middle';
+    cell.style.display = 'table-cell';
+    cell.style.lineHeight = '1.3';
+    cell.style.fontSize = '14px';
+
+    // Alignement
+    cell.style.textAlign = isTitre ? 'left' : 'center';
+    if (isTitre) cell.style.fontWeight = 'bold';
+  });
+
+  // Fix hauteur des lignes
+  clone.querySelectorAll('tr').forEach(el => {
+    (el as HTMLElement).style.minHeight = '40px';
+  });
+
+  // 📄 Ajouter à un conteneur invisible pour export
   const container = document.createElement('div');
   container.style.position = 'fixed';
   container.style.top = '-9999px';
@@ -1690,7 +1795,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                             historique.push(nouveauDevis);
                             localStorage.setItem('devisHistorique', JSON.stringify(historique));
 
-                            await exporterPDFSansClasses();
+                            await imprimerPDFViaPrintJS();
                           } catch (e) {
                             alert('❌ Erreur complète lors de l’export :');
                           }
@@ -1775,7 +1880,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                                 }),
                               });
                             } catch (err) {
-                              alert('⚠️ Backend injoignable, on continue sans lui :');
+                              console.warn('⚠️ Backend injoignable, on continue sans lui.');
                             }
 
                             // 💾 Sauvegarde dans l'historique local
@@ -1808,7 +1913,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                             localStorage.setItem('devisHistorique', JSON.stringify(historique));
 
                             // 📄 Génère le PDF
-                            await exporterPDFSansClasses();
+                            await imprimerPDFViaPrintJS();
                           } catch (e) {
                             alert('❌ Erreur complète lors de l’export :');
                           }
@@ -2012,15 +2117,49 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                                 : ligne.prixHoraire * ligne.heures;
                             return (
                               <tr key={`main-${index}`}>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>
+                                <td
+                                  style={{
+                                    padding: '6px',
+                                    textAlign: 'center',
+                                    verticalAlign: 'middle',
+                                  }}
+                                >
                                   {ligne.designation}
                                 </td>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>U</td>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>1</td>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>
+                                <td
+                                  style={{
+                                    padding: '6px',
+                                    textAlign: 'center',
+                                    verticalAlign: 'middle',
+                                  }}
+                                >
+                                  U
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '6px',
+                                    textAlign: 'center',
+                                    verticalAlign: 'middle',
+                                  }}
+                                >
+                                  1
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '6px',
+                                    textAlign: 'center',
+                                    verticalAlign: 'middle',
+                                  }}
+                                >
                                   {prix.toFixed(2)}
                                 </td>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>
+                                <td
+                                  style={{
+                                    padding: '6px',
+                                    textAlign: 'center',
+                                    verticalAlign: 'middle',
+                                  }}
+                                >
                                   {prix.toFixed(2)}
                                 </td>
                               </tr>
@@ -2100,17 +2239,49 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
 
                             return (
                               <tr key={`piece-${index}`}>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>
+                                <td
+                                  style={{
+                                    padding: '6px',
+                                    textAlign: 'center',
+                                    verticalAlign: 'middle',
+                                  }}
+                                >
                                   {ligne.designation}
                                 </td>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>U</td>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>
+                                <td
+                                  style={{
+                                    padding: '6px',
+                                    textAlign: 'center',
+                                    verticalAlign: 'middle',
+                                  }}
+                                >
+                                  U
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '6px',
+                                    textAlign: 'center',
+                                    verticalAlign: 'middle',
+                                  }}
+                                >
                                   {ligne.quantite}
                                 </td>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>
+                                <td
+                                  style={{
+                                    padding: '6px',
+                                    textAlign: 'center',
+                                    verticalAlign: 'middle',
+                                  }}
+                                >
                                   {prix.toFixed(2)}
                                 </td>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>
+                                <td
+                                  style={{
+                                    padding: '6px',
+                                    textAlign: 'center',
+                                    verticalAlign: 'middle',
+                                  }}
+                                >
                                   {(prix * ligne.quantite).toFixed(2)}
                                 </td>
                               </tr>
@@ -2127,40 +2298,40 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                         key={i}
                         style={{
                           width: '100%',
-                          borderCollapse: 'collapse', // pour souder les cellules
-                          borderSpacing: 0, // important !
-                          margin: 0, // empêche les marges verticales
-                          padding: 0,
+                          borderCollapse: 'collapse',
                           fontSize: '14px',
-                          border: '1px solid #e5e7eb',
+                          marginBottom: '24px',
                         }}
                       >
                         <thead>
-                          {/* Titre de la catégorie */}
-                          <tr style={{ backgroundColor: '#f2f2f2' }}>
+                          <tr>
                             <th
                               colSpan={cat.colonnes.length + 1}
                               style={{
+                                backgroundColor: '#f2f2f2',
                                 textAlign: 'left',
                                 padding: '8px',
                                 fontWeight: 'bold',
                                 borderBottom: '1px solid #e5e7eb',
+                                borderLeft: '1px solid #e5e7eb',
+                                borderRight: '1px solid #e5e7eb',
+                                WebkitPrintColorAdjust: 'exact',
+                                printColorAdjust: 'exact',
                               }}
                             >
                               {cat.emoji} {cat.nom}
                             </th>
                           </tr>
-
-                          {/* En-têtes */}
                           <tr>
                             {cat.colonnes.map((col, idx) => (
                               <th
                                 key={`col-${idx}`}
                                 style={{
                                   padding: '6px',
-                                  borderBottom: '1px solid #e5e7eb',
                                   textAlign: 'center',
                                   fontWeight: 'bold',
+                                  borderBottom: '1px solid #e5e7eb',
+                                  borderLeft: idx === 0 ? '1px solid #e5e7eb' : 'none',
                                 }}
                               >
                                 {col.nom}
@@ -2169,9 +2340,10 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                             <th
                               style={{
                                 padding: '6px',
-                                borderBottom: '1px solid #e5e7eb',
                                 textAlign: 'center',
                                 fontWeight: 'bold',
+                                borderBottom: '1px solid #e5e7eb',
+                                borderRight: '1px solid #e5e7eb',
                               }}
                             >
                               Total HT (€)
@@ -2194,14 +2366,30 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                                 return (
                                   <td
                                     key={`col-${idx}`}
-                                    style={{ padding: '6px', textAlign: 'center' }}
+                                    style={{
+                                      padding: '6px',
+                                      textAlign: 'center',
+                                      verticalAlign: 'middle',
+                                      borderLeft: idx === 0 ? '1px solid #e5e7eb' : 'none',
+                                      borderBottom:
+                                        j === cat.lignes.length - 1 ? '1px solid #e5e7eb' : 'none',
+                                    }}
                                   >
                                     {typeof val === 'number' ? val.toFixed(2) : val ?? '—'}
                                   </td>
                                 );
                               })}
 
-                              <td style={{ padding: '6px', textAlign: 'center' }}>
+                              <td
+                                style={{
+                                  padding: '6px',
+                                  textAlign: 'center',
+                                  verticalAlign: 'middle',
+                                  borderRight: '1px solid #e5e7eb',
+                                  borderBottom:
+                                    j === cat.lignes.length - 1 ? '1px solid #e5e7eb' : 'none',
+                                }}
+                              >
                                 {(() => {
                                   let pu = 0;
                                   const quantite = Number(ligne['quantite'] ?? 1);

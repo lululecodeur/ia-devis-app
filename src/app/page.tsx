@@ -236,6 +236,7 @@ export default function Home() {
     { designation: 'Pose WC suspendu', unite: 'U', prix: 350 },
   ]);
   const [lignesParseesTemp, setLignesParseesTemp] = useState<Ligne[] | null>(null);
+
   const [tvaTaux, setTvaTaux] = useState(20);
   const [remisePourcent, setRemisePourcent] = useState(0);
   const [acomptePourcent, setAcomptePourcent] = useState(30);
@@ -870,7 +871,6 @@ export default function Home() {
                                 border: 2px solid #2563eb;
                                 border-radius: 50%;
                                 cursor: pointer;
-                                box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
                               }
 
                               input[type='range'].slider-thumb-visible::-moz-range-thumb {
@@ -1189,28 +1189,30 @@ export default function Home() {
                       </div>
 
                       {/* Choix entre mode manuel ou IA */}
-                      <div className="flex gap-4 mt-2">
-                        <button
-                          onClick={() => setOnglet('manuel')}
-                          className={`cursor-pointer px-4 py-2 rounded-md text-sm border transition-colors ${
-                            onglet === 'manuel'
-                              ? 'bg-blue-600 text-white border-blue-600'
-                              : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300'
-                          }`}
-                        >
-                          📝 Lignes manuelles
-                        </button>
-                        <button
-                          onClick={() => setOnglet('ia')}
-                          className={`cursor-pointer px-4 py-2 rounded-md text-sm border transition-colors ${
-                            onglet === 'ia'
-                              ? 'bg-blue-600 text-white border-blue-600'
-                              : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300'
-                          }`}
-                        >
-                          🤖 Génération IA
-                        </button>
-                      </div>
+                      {false && (
+                        <div className="flex gap-4 mt-2">
+                          <button
+                            onClick={() => setOnglet('manuel')}
+                            className={`cursor-pointer px-4 py-2 rounded-md text-sm border transition-colors ${
+                              onglet === 'manuel'
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300'
+                            }`}
+                          >
+                            📝 Lignes manuelles
+                          </button>
+                          <button
+                            onClick={() => setOnglet('ia')}
+                            className={`cursor-pointer px-4 py-2 rounded-md text-sm border transition-colors ${
+                              onglet === 'ia'
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300'
+                            }`}
+                          >
+                            🤖 Génération IA
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </Card>
                   <Card title="🧾 Numéro du devis">
@@ -1445,7 +1447,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                     </div>
                   )}
 
-                  {onglet === 'ia' && (
+                  {false && (
                     <Card title="🤖 Génération IA">
                       <div className="flex flex-col gap-4">
                         <label className="block font-medium mb-1">
@@ -1555,7 +1557,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                           🤖 Générer automatiquement avec IA
                         </button>
 
-                        {devisIA && (
+                        {false && (
                           <>
                             <pre className="mt-4 whitespace-pre-wrap bg-gray-100 p-4 rounded text-sm border">
                               {devisIA}
@@ -1572,7 +1574,8 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                                 <button
                                   className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
                                   onClick={() => {
-                                    setLignes(lignesParseesTemp);
+                                    if (lignesParseesTemp) setLignes(lignesParseesTemp);
+
                                     setLignesParseesTemp(null);
                                   }}
                                 >
@@ -1582,7 +1585,9 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                                 <button
                                   className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
                                   onClick={() => {
-                                    setLignes([...lignes, ...lignesParseesTemp]);
+                                    if (lignesParseesTemp)
+                                      setLignes([...lignes, ...lignesParseesTemp]);
+
                                     setLignesParseesTemp(null);
                                   }}
                                 >
@@ -1710,6 +1715,11 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                               return;
                             }
 
+                            if (!lignesFinales || lignesFinales.length === 0) {
+                              alert('❌ Aucune ligne dans le devis.');
+                              return;
+                            }
+
                             const clientsStr = localStorage.getItem('clients');
                             const clients = clientsStr ? JSON.parse(clientsStr) : [];
 
@@ -1764,7 +1774,9 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                                   client_id: client_id_final,
                                 }),
                               });
-                            } catch (err) {}
+                            } catch (err) {
+                              console.warn('⚠️ Erreur sauvegarde backend :', err);
+                            }
 
                             const historiqueStr = localStorage.getItem('devisHistorique');
                             const historique = historiqueStr ? JSON.parse(historiqueStr) : [];
@@ -1795,9 +1807,62 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                             historique.push(nouveauDevis);
                             localStorage.setItem('devisHistorique', JSON.stringify(historique));
 
-                            await imprimerPDFViaPrintJS();
+                            await new Promise(resolve => setTimeout(resolve, 0));
+
+                            const devisElement = document.getElementById('devis-final');
+
+                            if (!devisElement) {
+                              alert('❌ Impossible de trouver le bloc #devis-final.');
+                              return;
+                            }
+
+                            if (devisElement.outerHTML.includes('test local pdf')) {
+                              alert('❌ Le contenu du devis semble vide ou invalide.');
+                              return;
+                            }
+
+                            const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              * { font-family: Arial, sans-serif; }
+              body { padding: 2rem; }
+            </style>
+          </head>
+          <body>
+            ${devisElement.outerHTML}
+          </body>
+        </html>
+      `;
+
+                            console.log('🚀 HTML envoyé au backend :', html);
+
+                            const res = await fetch(
+                              `${process.env.NEXT_PUBLIC_API_URL}/generate-pdf`,
+                              {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  html,
+                                  filename: `devis-${numeroDevis || 'sans-numero'}.pdf`,
+                                }),
+                              }
+                            );
+
+                            const blob = await res.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'devis.pdf';
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+
+                            alert('✅ Devis exporté avec succès !');
                           } catch (e) {
-                            alert('❌ Erreur complète lors de l’export :');
+                            alert('❌ Erreur complète lors de l’export.');
+                            console.error(e);
                           }
                         }}
                         className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-3 rounded-xl shadow flex items-center justify-center gap-2"

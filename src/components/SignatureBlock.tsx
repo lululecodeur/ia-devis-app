@@ -1,5 +1,6 @@
 import SignatureCanvas from 'react-signature-canvas';
 import { useRef } from 'react';
+import Button from '@/components/ui/bouton';
 
 export default function SignatureBlock({
   label,
@@ -48,18 +49,12 @@ export default function SignatureBlock({
       />
 
       <div className="flex gap-3 mt-2">
-        <button
-          onClick={save}
-          className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-md border border-green-700 shadow-sm transition-colors"
-        >
-          ✅ Sauvegarder
-        </button>
-        <button
-          onClick={clear}
-          className="bg-red-100 hover:bg-red-200 text-red-700 text-sm px-4 py-2 rounded-md border border-red-300 shadow-sm transition-colors"
-        >
-          🗑️ Effacer
-        </button>
+        <Button variant="primary" size="md" onClick={save}>
+          Sauvegarder
+        </Button>
+        <Button variant="danger" size="md" onClick={clear}>
+          Effacer
+        </Button>
       </div>
 
       {value && (

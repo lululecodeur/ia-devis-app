@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Button from '@/components/ui/bouton';
 
 type LigneCustom = { [cle: string]: any };
 
@@ -41,6 +42,8 @@ export default function BlocCategorie({
   const afficherNettoye = (val: any): string =>
     val !== undefined ? String(cleanNumericInput(String(val))) : '';
 
+  const [replie, setReplie] = useState(!categorie.afficher);
+
   const ajouterLigne = () => {
     const nouvelleLigne: LigneCustom = {};
     categorie.colonnes.forEach(col => {
@@ -79,6 +82,39 @@ export default function BlocCategorie({
       });
     }
   };
+  if (replie) {
+    return (
+      <div className="border border-gray-300 p-4 rounded-lg bg-gray-50 shadow-sm mb-4">
+        <div className="flex justify-between items-center">
+          <span className="font-semibold">
+            {categorie.emoji || '📂'} {categorie.nom}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setReplie(false)}
+              className="text-blue-600 text-sm hover:underline"
+            >
+              Afficher/Modifier
+            </button>
+            <button
+              onClick={() => onUpdate({ ...categorie, afficher: !categorie.afficher })}
+              className="text-gray-600 text-sm hover:underline"
+            >
+              {categorie.afficher ? '📤 Retirer du PDF' : '📥 Afficher dans PDF'}
+            </button>
+            <button onClick={onDelete} className="text-red-600 text-sm hover:underline">
+              ❌ Supprimer
+            </button>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500 mt-1">
+          {categorie.colonnes.length} colonne{categorie.colonnes.length > 1 ? 's' : ''} —{' '}
+          {categorie.lignes.length} ligne{categorie.lignes.length > 1 ? 's' : ''} —{' '}
+          {categorie.afficher ? 'affiché' : 'non affiché'} dans PDF
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-1">
@@ -89,8 +125,12 @@ export default function BlocCategorie({
           onChange={e => onUpdate({ ...categorie, nom: e.target.value })}
           className="text-lg font-semibold bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none transition"
         />
-        <button onClick={onDelete} className="text-red-600 text-sm underline hover:text-red-800">
-          Supprimer cette catégorie
+
+        <button
+          onClick={() => setReplie(true)}
+          className="text-sm text-gray-500 hover:text-gray-700 underline"
+        >
+          🔽 Réduire
         </button>
       </div>
 
@@ -128,7 +168,7 @@ export default function BlocCategorie({
                 className="w-48 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="texte">Texte</option>
-                <option value="quantite">Quantité</option>
+                <option value="quantite">Qté</option>
                 <option value="prix">Prix</option>
                 <option value="prixAvecMarge">Prix avec marge</option>
               </select>
@@ -144,17 +184,19 @@ export default function BlocCategorie({
               </button>
             </div>
           ))}
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-75"
             onClick={() =>
               onUpdate({
                 ...categorie,
                 colonnes: [...categorie.colonnes, { nom: '', type: 'texte' }],
               })
             }
-            className="text-sm text-blue-600 hover:text-blue-800 underline w-fit"
           >
             ➕ Ajouter une colonne au tableau (aperçu ci-dessous)
-          </button>
+          </Button>
         </div>
 
         <table className="w-full text-sm border-separate border-spacing-y-2 mt-4">
@@ -252,25 +294,32 @@ export default function BlocCategorie({
         </table>
       </div>
 
-      <button
-        onClick={ajouterLigne}
-        className="bg-white hover:bg-gray-100 text-sm text-gray-800 px-4 py-2 rounded-md border border-gray-300 shadow-sm w-fit"
-      >
+      <Button variant="ghost" size="sm" onClick={ajouterLigne} className="w-75">
         ➕ Ajouter une ligne
-      </button>
+      </Button>
 
-      <div className="flex items-center gap-4 mt-4">
-        <span className="text-sm font-medium text-gray-700">Afficher dans le PDF</span>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={categorie.afficher}
-            onChange={e => onUpdate({ ...categorie, afficher: e.target.checked })}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition duration-300"></div>
-          <div className="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-full shadow"></div>
-        </label>
+      <div className="flex items-center justify-between gap-4 mt-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-700">Afficher dans le PDF</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={categorie.afficher}
+              onChange={e => {
+                const val = e.target.checked;
+                onUpdate({ ...categorie, afficher: val });
+                if (!val) setReplie(true);
+              }}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition duration-300"></div>
+            <div className="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-full shadow"></div>
+          </label>
+        </div>
+
+        <Button variant="danger" size="sm" onClick={onDelete}>
+          Supprimer du devis
+        </Button>
       </div>
     </div>
   );

@@ -11,6 +11,8 @@ import BlocPieces from '@/components/BlocPieces';
 import Link from 'next/link';
 import { createRoot } from 'react-dom/client'; // ✅ à importer une seule fois
 import BlocCategorie from '@/components/BlocCategorie';
+import ModalNouvelleCategorie from '@/components/ModalNouvelleCategorie';
+import Button from '@/components/ui/bouton';
 
 // Types
 
@@ -263,6 +265,8 @@ export default function Home() {
   const [afficherMainOeuvre, setAfficherMainOeuvre] = useState(true);
   const [afficherPieces, setAfficherPieces] = useState(true);
   const lignesPourPDF: { type: 'header' | 'ligne'; contenu?: Ligne }[] = [];
+  const [showModal, setShowModal] = useState(false);
+
   const [numeroDevis, setNumeroDevis] = useState('');
   const [colonnesCustom, setColonnesCustom] = useState<
     { nom: string; type: 'texte' | 'quantite' | 'prix' | 'prixAvecMarge' }[]
@@ -584,6 +588,9 @@ export default function Home() {
         setHasHydratedFromDevis(true);
         localStorage.removeItem('devisEnCours');
         setCanSaveEmetteur(true); // autorise la sauvegarde ensuite
+        setLignesMainOeuvre(data.lignesMainOeuvre || []);
+        setLignesPieces(data.lignesPieces || []);
+        setCategoriesDynamiques(data.categoriesDynamiques || []);
       } catch (err) {
         console.error('Erreur lors de la lecture du devis à réutiliser :', err);
       }
@@ -591,6 +598,17 @@ export default function Home() {
       setHasHydratedFromDevis(true); // même s'il n'y a rien, on le signale
     }
   }, []);
+
+  useEffect(() => {
+    if (!hasHydratedFromDevis) return;
+
+    const timeout = setTimeout(() => {
+      localStorage.removeItem('devisEnCours');
+    }, 500); // laisse le temps à tous les setters de s’appliquer
+
+    return () => clearTimeout(timeout);
+  }, [hasHydratedFromDevis]);
+
   useEffect(() => {
     const saved = localStorage.getItem('categoriesSauvegardees');
     if (saved) {
@@ -671,15 +689,16 @@ export default function Home() {
           <p className="text-gray-600 mb-6">
             Commencez par choisir un secteur pour générer votre premier devis.
           </p>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => {
               setShowSecteurModal(true);
               setMode('devis'); // ✅ Ajout indispensable
             }}
-            className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 shadow"
           >
             🚀 Commencer
-          </button>
+          </Button>
         </div>
       )}
 
@@ -1011,17 +1030,18 @@ export default function Home() {
                           onChange={e => setBic(e.target.value)}
                         />
 
-                        <button
+                        <Button
                           onClick={() => {
                             localStorage.removeItem('emetteur');
                             localStorage.removeItem('logo');
                             setEmetteur({ nom: '', adresse: '', siret: '', email: '', tel: '' });
                             setLogo(null);
                           }}
-                          className="text-sm text-red-600 underline hover:text-red-800 transition-colors cursor-pointer"
+                          variant="ghost"
+                          size="sm"
                         >
                           🔄 Réinitialiser les infos enregistrées
-                        </button>
+                        </Button>
                       </div>
                     </Card>
 
@@ -1074,7 +1094,7 @@ export default function Home() {
                           onChange={e => setRecepteur({ ...recepteur, tel: e.target.value })}
                         />
                       </div>
-                      <button
+                      <Button
                         onClick={() => {
                           try {
                             // 🔒 Vérif basique
@@ -1116,19 +1136,22 @@ export default function Home() {
                             alert("Erreur lors de l'enregistrement du client.");
                           }
                         }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm w-full mb-2"
+                        variant="primary"
+                        size="md"
+                        className="full-w"
                       >
                         💾 Enregistrer les infos client
-                      </button>
+                      </Button>
 
-                      <button
+                      <Button
                         onClick={() => {
                           window.location.href = '/clients';
                         }}
-                        className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded text-sm w-full"
+                        variant="ghost"
+                        size="sm"
                       >
                         📁 Voir les infos client enregistrées
-                      </button>
+                      </Button>
                     </Card>
                   </div>
 
@@ -1266,9 +1289,10 @@ export default function Home() {
                       </Card>
 
                       {/* 🟦 Bloc séparé : catégories dynamiques */}
-                      <Card title="📦 Catégories personnalisées">
+                      <Card title="📦 Catégories personnalisées et enregistrées">
+                        {/* 🔁 Catégories dynamiques en cours */}
                         {categoriesDynamiques.map((cat, index) => (
-                          <div key={index}>
+                          <div key={index} className="mb-6">
                             <BlocCategorie
                               categorie={cat}
                               onUpdate={updatedCat => {
@@ -1283,12 +1307,12 @@ export default function Home() {
                               }}
                             />
 
-                            {/* ✅ Bouton de sauvegarde déporté ici */}
-                            <button
-                              className="text-sm text-blue-600 hover:text-blue-800 underline mt-2"
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="mt-4"
                               onClick={() => {
                                 const cat = categoriesDynamiques[index];
-
                                 if (!cat.nom || cat.colonnes.length === 0) {
                                   alert('❌ Le nom ou les colonnes sont vides.');
                                   return;
@@ -1327,121 +1351,101 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                                 alert('✅ Catégorie enregistrée.');
                               }}
                             >
-                              💾 Sauvegarder cette catégorie et ces prestations
-                            </button>
+                              💾 Sauvegarder cette catégorie et ses prestations
+                            </Button>
 
-                            {/* Trait de séparation sauf après la dernière */}
                             {index < categoriesDynamiques.length - 1 && (
-                              <div className="flex justify-center">
-                                <div className="h-1 w-3/4 bg-gray-300 my-10 rounded-full" />
-                              </div>
+                              <div className="h-1 w-full bg-gray-200 my-8 rounded-full" />
                             )}
                           </div>
                         ))}
 
-                        {/* Ajout d'une nouvelle catégorie */}
+                        {/* ➕ Ajout d'une nouvelle catégorie */}
+                        <div className="mt-10">
+                          <button
+                            onClick={() => setShowModal(true)}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition mt-10"
+                          >
+                            ➕ Ajouter une catégorie
+                          </button>
+
+                          {showModal && (
+                            <ModalNouvelleCategorie
+                              onClose={() => setShowModal(false)}
+                              onCreate={cat =>
+                                setCategoriesDynamiques([...categoriesDynamiques, cat])
+                              }
+                            />
+                          )}
+                        </div>
+
+                        {/* 📂 Catégories enregistrées */}
                         <div className="mt-10">
                           <h3 className="text-md font-semibold text-gray-700 mb-2">
-                            ➕ Ajouter une catégorie personnalisée
+                            📁 Catégories enregistrées
                           </h3>
-                          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
-                            <input
-                              type="text"
-                              value={nouvelleCategorie}
-                              onChange={e => setNouvelleCategorie(e.target.value)}
-                              className="w-full sm:w-auto flex-grow p-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="Ex : Location, Transport, Divers"
-                            />
-                            <button
-                              onClick={() => {
-                                const nom = nouvelleCategorie.trim();
-                                if (!nom) return;
 
-                                setCategoriesDynamiques([
-                                  ...categoriesDynamiques,
-                                  {
-                                    nom,
-                                    colonnes: [
-                                      { nom: 'Désignation', type: 'texte' },
-                                      { nom: 'Quantité', type: 'quantite' },
-                                      { nom: 'Prix', type: 'prixAvecMarge' },
-                                    ],
-                                    lignes: [],
-                                    afficher: true,
-                                  },
-                                ]);
-                                setNouvelleCategorie('');
-                              }}
-                              className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition"
-                            >
-                              ➕ Ajouter
-                            </button>
-                          </div>
-                          <p className="text-sm text-gray-500 mt-1">
-                            Les colonnes par défaut seront : designation (texte), quantite
-                            (numérique) et prix (avec marge).
-                          </p>
-                        </div>
-                      </Card>
-
-                      <Card title="📂 Catégories enregistrées">
-                        {categoriesSauvegardees.length === 0 && (
-                          <p className="text-sm text-gray-500">
-                            Aucune catégorie enregistrée pour l'instant.
-                          </p>
-                        )}
-                        <div className="flex flex-col gap-2">
-                          {categoriesSauvegardees.map((cat, index) => (
-                            <div
-                              key={index}
-                              className="flex justify-between items-center border border-gray-300 bg-white shadow-sm p-3 rounded-lg"
-                            >
-                              <span>
-                                {cat.emoji} {cat.nom}
-                              </span>
-                              <div className="flex gap-2">
-                                <button
-                                  className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                                  onClick={() =>
-                                    setCategoriesDynamiques([
-                                      ...categoriesDynamiques,
-                                      {
-                                        nom: cat.nom,
-                                        colonnes: [...cat.colonnes],
-                                        lignes: cat.lignes ? cat.lignes.map(l => ({ ...l })) : [],
-                                        afficher: true,
-                                        emoji: cat.emoji,
-                                      },
-                                    ])
-                                  }
+                          {categoriesSauvegardees.length === 0 ? (
+                            <p className="text-sm text-gray-500">
+                              Aucune catégorie enregistrée pour l'instant.
+                            </p>
+                          ) : (
+                            <div className="flex flex-col gap-2">
+                              {categoriesSauvegardees.map((cat, index) => (
+                                <div
+                                  key={index}
+                                  className="flex justify-between items-center border border-gray-300 bg-white shadow-sm p-3 rounded-lg"
                                 >
-                                  ➕ Ajouter
-                                </button>
+                                  <span>
+                                    {cat.emoji} {cat.nom}
+                                  </span>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="primary"
+                                      size="md"
+                                      onClick={() =>
+                                        setCategoriesDynamiques([
+                                          ...categoriesDynamiques,
+                                          {
+                                            nom: cat.nom,
+                                            colonnes: [...cat.colonnes],
+                                            lignes: cat.lignes
+                                              ? cat.lignes.map(l => ({ ...l }))
+                                              : [],
+                                            afficher: true,
+                                            emoji: cat.emoji,
+                                          },
+                                        ])
+                                      }
+                                    >
+                                      Ajouter
+                                    </Button>
+                                    <Button
+                                      variant="danger"
+                                      size="md"
+                                      onClick={() => {
+                                        const confirmer = window.confirm(
+                                          `❌ Supprimer la catégorie "${cat.nom}" ?`
+                                        );
+                                        if (!confirmer) return;
 
-                                {/* ✅ BOUTON SUPPRIMER */}
-                                <button
-                                  className="text-sm bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
-                                  onClick={() => {
-                                    const confirmer = window.confirm(
-                                      `❌ Supprimer la catégorie "${cat.nom}" ?`
-                                    );
-                                    if (!confirmer) return;
-
-                                    const copie = [...categoriesSauvegardees];
-                                    copie.splice(index, 1);
-                                    setCategoriesSauvegardees(copie);
-                                    localStorage.setItem(
-                                      'categoriesSauvegardees',
-                                      JSON.stringify(copie)
-                                    );
-                                    alert('🗑️ Catégorie supprimée.');
-                                  }}
-                                >
-                                  ❌
-                                </button>
-                              </div>
+                                        const copie = [...categoriesSauvegardees];
+                                        copie.splice(index, 1);
+                                        setCategoriesSauvegardees(copie);
+                                        localStorage.setItem(
+                                          'categoriesSauvegardees',
+                                          JSON.stringify(copie)
+                                        );
+                                        alert('🗑️ Catégorie supprimée.');
+                                      }}
+                                    >
+                                      Supprimer
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          )}
                         </div>
                       </Card>
                     </div>
@@ -1705,9 +1709,9 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                   </Card>
 
                   {/* Bouton fixe en bas à gauche */}
-                  {mode === 'devis' && !showSecteurModal && (
+                  {mode === 'devis' && !showSecteurModal && !showModal && (
                     <div className="sticky bottom-4 left-4 z-50">
-                      <button
+                      <Button
                         onClick={async () => {
                           try {
                             // ✅ Vérifs de base
@@ -1786,6 +1790,9 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                             historique.push({
                               titre,
                               lignesFinales,
+                              lignesMainOeuvre,
+                              lignesPieces,
+                              categoriesDynamiques,
                               total_ht_brut: totalHTBrut,
                               remise,
                               total_ht: totalHT,
@@ -1888,10 +1895,11 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                             console.error(e);
                           }
                         }}
-                        className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-3 rounded-xl shadow flex items-center justify-center gap-2"
+                        variant="success"
+                        size="md"
                       >
                         Exporter le deviss
-                      </button>
+                      </Button>
                     </div>
                   )}
 
@@ -1901,7 +1909,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
 
                   <Card title="📤 Export & Historique">
                     <div className="flex flex-col gap-4">
-                      <button
+                      <Button
                         onClick={async () => {
                           try {
                             // ✅ Vérifs de base
@@ -2082,15 +2090,16 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                             console.error(e);
                           }
                         }}
-                        className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-3 rounded-xl shadow flex items-center justify-center gap-2"
+                        variant="success"
+                        size="lg"
                       >
                         Exporter le deviss
-                      </button>
+                      </Button>
                       <div className="flex justify-center mt-4">
                         <Link href="/historique">
-                          <button className="bg-gray-100 hover:bg-gray-200 text-sm text-gray-800 px-4 py-2 rounded-md border border-gray-300 shadow-sm">
+                          <Button variant="ghost" size="md">
                             📁 Voir l’historique des devis
-                          </button>
+                          </Button>
                         </Link>
                       </div>
                     </div>

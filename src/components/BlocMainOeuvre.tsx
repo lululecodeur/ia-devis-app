@@ -1,4 +1,3 @@
-'use client';
 import { useEffect, useState } from 'react';
 
 interface LigneMainOeuvre {
@@ -31,6 +30,7 @@ export default function BlocMainOeuvre({
   setNomCategorie: (v: string) => void;
   secteurActif?: string;
 }) {
+  const [replie, setReplie] = useState(!afficher);
   const [prestationsSauvegardees, setPrestationsSauvegardees] = useState<LigneMainOeuvre[]>([]);
 
   const ajouterLigne = () => {
@@ -57,41 +57,112 @@ export default function BlocMainOeuvre({
   };
 
   const sauvegarderLigne = (ligne: LigneMainOeuvre) => {
-    if (!secteurActif) return;
-    const cle = `prestationsMainOeuvre_${secteurActif}`;
+    const secteur = secteurActif || 'global';
+    console.log('💾 Sauvegarde dans la clé :', `prestationsSauvegardees_${secteur}`);
+    const cle = `prestationsSauvegardees_${secteur}`;
     const nouvelleListe = [...prestationsSauvegardees, ligne];
     localStorage.setItem(cle, JSON.stringify(nouvelleListe));
     setPrestationsSauvegardees(nouvelleListe);
     alert('✅ Prestation enregistrée');
   };
 
+  // 🔁 Chargement initial
   useEffect(() => {
-    if (secteurActif) {
-      const cle = `prestationsMainOeuvre_${secteurActif}`;
-      const sauvegardes = localStorage.getItem(cle);
-      if (sauvegardes) {
-        try {
-          const parsed = JSON.parse(sauvegardes);
-          if (Array.isArray(parsed)) {
-            setPrestationsSauvegardees(parsed);
-          }
-        } catch (e) {
-          console.error('Erreur chargement prestations main d’œuvre', e);
+    const secteur = secteurActif || 'global';
+
+    const lignesBrutes = localStorage.getItem(`lignesMainOeuvre_${secteur}`);
+    if (lignesBrutes) {
+      try {
+        const parsed = JSON.parse(lignesBrutes);
+        if (Array.isArray(parsed)) {
+          setLignes(parsed);
         }
+      } catch (e) {
+        console.error('Erreur parsing lignes main d’œuvre :', e);
+      }
+    }
+
+    const nom = localStorage.getItem(`nomCategorieMainOeuvre_${secteur}`);
+    if (nom) {
+      setNomCategorie(nom);
+    }
+
+    const sauvegardes = localStorage.getItem(`prestationsSauvegardees_${secteur}`);
+    if (sauvegardes) {
+      try {
+        const parsed = JSON.parse(sauvegardes);
+        if (Array.isArray(parsed)) {
+          setPrestationsSauvegardees(parsed);
+        }
+      } catch (e) {
+        console.error('Erreur parsing prestations sauvegardées :', e);
       }
     }
   }, [secteurActif]);
 
+  // 💾 Sauvegarde automatique des lignes
+  useEffect(() => {
+    const secteur = secteurActif || 'global';
+    localStorage.setItem(`lignesMainOeuvre_${secteur}`, JSON.stringify(lignes));
+  }, [lignes, secteurActif]);
+
+  // 💾 Sauvegarde automatique du nom de catégorie
+  useEffect(() => {
+    const secteur = secteurActif || 'global';
+    localStorage.setItem(`nomCategorieMainOeuvre_${secteur}`, nomCategorie);
+  }, [nomCategorie, secteurActif]);
+
+  if (replie) {
+    return (
+      <div className="border border-gray-300 p-4 rounded-lg bg-gray-50 shadow-sm mb-4">
+        <div className="flex justify-between items-center">
+          <span className="font-semibold">{nomCategorie || '👷‍♂️ Main d’œuvre'}</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setReplie(false)}
+              className="text-blue-600 text-sm hover:underline"
+            >
+              Afficher/Modifier
+            </button>
+            <button
+              onClick={() => setAfficher(!afficher)}
+              className="text-gray-600 text-sm hover:underline"
+            >
+              {afficher ? '📤 Retirer du PDF' : '📥 Afficher dans PDF'}
+            </button>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500 mt-1">
+          {lignes.length} ligne{lignes.length > 1 ? 's' : ''} —{' '}
+          {afficher ? 'affiché' : 'non affiché'} dans PDF
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <span>👷‍♂️</span>
-        <input
-          type="text"
-          value={nomCategorie}
-          onChange={e => setNomCategorie(e.target.value)}
-          className="text-lg font-semibold bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none transition"
-        />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span>👷‍♂️</span>
+          <input
+            type="text"
+            value={nomCategorie}
+            onChange={e => {
+              const value = e.target.value;
+              setNomCategorie(value);
+              const secteur = secteurActif || 'global';
+              localStorage.setItem(`nomCategorieMainOeuvre_${secteur}`, value);
+            }}
+            className="text-lg font-semibold bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none transition"
+          />
+        </div>
+        <button
+          onClick={() => setReplie(true)}
+          className="text-sm text-gray-500 hover:text-gray-700 underline"
+        >
+          🔽 Réduire
+        </button>
       </div>
 
       <div className="overflow-x-auto">
@@ -222,10 +293,10 @@ export default function BlocMainOeuvre({
         </label>
       </div>
 
-      {secteurActif && prestationsSauvegardees.length > 0 && (
+      {prestationsSauvegardees.length > 0 && (
         <div className="mt-6">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">
-            📂 Prestations enregistrées ({secteurActif})
+            📂 Prestations enregistrées ({secteurActif || 'global'})
           </h3>
           <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 flex flex-col gap-2">
             {prestationsSauvegardees.map((prestation, index) => (
@@ -263,9 +334,10 @@ export default function BlocMainOeuvre({
                       const updated = [...prestationsSauvegardees];
                       updated.splice(index, 1);
                       localStorage.setItem(
-                        `prestationsMainOeuvre_${secteurActif}`,
+                        `prestationsSauvegardees_${secteurActif}`,
                         JSON.stringify(updated)
                       );
+
                       setPrestationsSauvegardees(updated);
                     }}
                   >

@@ -23,8 +23,13 @@ interface InfoEntreprise {
 interface Devis {
   date: string;
   titre: string;
-  numeroDevis?: string; // ✅ Ajout
+  numeroDevis?: string;
   lignes: Ligne[];
+
+  lignesMainOeuvre?: any[];
+  lignesPieces?: any[];
+  categoriesDynamiques?: any[];
+
   intro?: string;
   conclusion?: string;
   mentions?: string;
@@ -53,8 +58,16 @@ export default function HistoriquePage() {
   }, []);
 
   const reutiliserDevis = (devis: Devis) => {
-    localStorage.setItem('devisEnCours', JSON.stringify(devis));
-    router.push('/?mode=devis');
+    // ⚠️ Patch : inclure les prestations si elles existent
+    const complet = {
+      ...devis,
+      lignesMainOeuvre: devis.lignesMainOeuvre || [],
+      lignesPieces: devis.lignesPieces || [],
+      categoriesDynamiques: devis.categoriesDynamiques || [],
+    };
+
+    localStorage.setItem('devisEnCours', JSON.stringify(complet));
+    window.location.href = '/?mode=devis';
   };
 
   const supprimerDevis = (index: number) => {

@@ -12,13 +12,36 @@ interface Client {
   client_id?: string;
 }
 
+interface InfoEntreprise {
+  nom: string;
+  adresse?: string;
+  siret?: string;
+  email?: string;
+  tel?: string;
+}
+
+interface Ligne {
+  designation: string;
+  unite: string;
+  quantite: number;
+  prix: number;
+}
+
 interface Devis {
   titre?: string;
   date?: string;
   created_at?: string;
   client_id?: string;
   recepteur?: Client;
-  [key: string]: any;
+  lignes?: Ligne[];
+  lignesMainOeuvre?: any[];
+  lignesPieces?: any[];
+  categoriesDynamiques?: any[];
+  intro?: string;
+  conclusion?: string;
+  mentions?: string;
+  emetteur?: InfoEntreprise;
+  logo?: string;
 }
 
 export default function ClientsPage() {

@@ -69,6 +69,8 @@ export default function BlocPieces({
     setLignes(copie);
   };
 
+  const [replie, setReplie] = useState(!afficher);
+
   const sauvegarderLigne = (ligne: LignePiece) => {
     if (!secteurActif) return;
     const cle = `prestationsPieces_${secteurActif}`;
@@ -80,8 +82,10 @@ export default function BlocPieces({
 
   useEffect(() => {
     if (secteurActif) {
-      const cle = `prestationsPieces_${secteurActif}`;
-      const sauvegardes = localStorage.getItem(cle);
+      const clePrestations = `prestationsPieces_${secteurActif}`;
+      const cleNomCategorie = `nomCategoriePieces_${secteurActif}`;
+
+      const sauvegardes = localStorage.getItem(clePrestations);
       if (sauvegardes) {
         try {
           const parsed = JSON.parse(sauvegardes);
@@ -92,19 +96,64 @@ export default function BlocPieces({
           console.error('Erreur chargement prestations pièces', e);
         }
       }
+
+      const nomSauvegarde = localStorage.getItem(cleNomCategorie);
+      if (nomSauvegarde) {
+        setNomCategorie(nomSauvegarde);
+      }
     }
   }, [secteurActif]);
 
+  if (replie) {
+    return (
+      <div className="border border-gray-300 p-4 rounded-lg bg-gray-50 shadow-sm mb-4">
+        <div className="flex justify-between items-center">
+          <span className="font-semibold">{nomCategorie || '🧩 Pièces'}</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setReplie(false)}
+              className="text-blue-600 text-sm hover:underline"
+            >
+              Afficher/Modifier
+            </button>
+            <button
+              onClick={() => setAfficher(!afficher)}
+              className="text-gray-600 text-sm hover:underline"
+            >
+              {afficher ? '📤 Retirer du PDF' : '📥 Afficher dans PDF'}
+            </button>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500 mt-1">
+          {lignes.length} ligne{lignes.length > 1 ? 's' : ''} —{' '}
+          {afficher ? 'affiché' : 'non affiché'} dans PDF
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <span>🔩</span>
-        <input
-          type="text"
-          value={nomCategorie}
-          onChange={e => setNomCategorie(e.target.value)}
-          className="text-lg font-semibold bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none transition"
-        />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span>🔩</span>
+          <input
+            type="text"
+            value={nomCategorie}
+            onChange={e => {
+              const value = e.target.value;
+              setNomCategorie(value);
+              localStorage.setItem(`nomCategorieMainOeuvre_${secteurActif || 'global'}`, value);
+            }}
+            className="text-lg font-semibold bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none transition"
+          />
+        </div>
+        <button
+          onClick={() => setReplie(true)}
+          className="text-sm text-gray-500 hover:text-gray-700 underline"
+        >
+          🔽 Réduire
+        </button>
       </div>
 
       <div className="overflow-x-auto">
@@ -237,7 +286,11 @@ export default function BlocPieces({
           <input
             type="checkbox"
             checked={afficher}
-            onChange={e => setAfficher(e.target.checked)}
+            onChange={e => {
+              const val = e.target.checked;
+              setAfficher(val);
+              if (!val) setReplie(true);
+            }}
             className="sr-only peer"
           />
           <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition duration-300"></div>

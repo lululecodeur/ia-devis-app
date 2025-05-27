@@ -311,6 +311,7 @@ export default function PreviewDevis(props: PreviewDevisProps) {
                         padding: '6px',
                         textAlign: 'center',
                         verticalAlign: 'middle',
+                        wordBreak: 'break-word',
                       }}
                     >
                       {ligne.designation}
@@ -449,6 +450,7 @@ export default function PreviewDevis(props: PreviewDevisProps) {
                         padding: '6px',
                         textAlign: 'center',
                         verticalAlign: 'middle',
+                        wordBreak: 'break-word',
                       }}
                     >
                       {ligne.designation}
@@ -520,6 +522,7 @@ export default function PreviewDevis(props: PreviewDevisProps) {
                 tableLayout: 'fixed',
                 fontSize: '14px',
                 marginBottom: '24px',
+                wordBreak: 'break-word',
               }}
             >
               <colgroup>
@@ -652,6 +655,7 @@ export default function PreviewDevis(props: PreviewDevisProps) {
         })}
       </>
 
+      {/* Bloc parent flex pour alignement horizontal */}
       <div
         style={{
           display: 'flex',
@@ -660,17 +664,21 @@ export default function PreviewDevis(props: PreviewDevisProps) {
           marginTop: '24px',
         }}
       >
-        {/* Mentions à gauche */}
-        {mentions.trim() && (
-          <div style={{ flex: 1.2 }}>
-            <p style={{ marginBottom: '4px' }}>
-              <strong>Mentions légales :</strong>
-            </p>
-            <p style={{ fontSize: '13px', whiteSpace: 'pre-wrap' }}>{mentions}</p>
-          </div>
-        )}
+        {/* Bloc gauche : mentions OU vide */}
+        <div style={{ flex: 1.2 }}>
+          {mentions.trim() ? (
+            <>
+              <p style={{ marginBottom: '4px' }}>
+                <strong>Mentions légales :</strong>
+              </p>
+              <p style={{ fontSize: '13px', whiteSpace: 'pre-wrap' }}>{mentions}</p>
+            </>
+          ) : (
+            <div style={{ height: '100%' }} />
+          )}
+        </div>
 
-        {/* Totaux à droite */}
+        {/* Bloc droit : tableau des totaux */}
         <div style={{ flex: 1 }}>
           <table
             style={{

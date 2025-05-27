@@ -6,7 +6,7 @@ export default function Card({
   children,
   title,
   className = '',
-  initialOpen = true,
+  initialOpen = false,
 }: {
   children: ReactNode;
   title?: ReactNode;

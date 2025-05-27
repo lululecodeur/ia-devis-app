@@ -34,6 +34,7 @@ interface Tarif {
 
 // Ligne Main d'œuvre
 interface LigneMainOeuvre {
+  id: string;
   designation: string;
   mode: 'horaire' | 'fixe';
   prixHoraire: number;
@@ -43,6 +44,7 @@ interface LigneMainOeuvre {
 
 // Ligne Pièce
 interface LignePiece {
+  id: string;
   designation: string;
   prixAchat: number;
   margePourcent: number;
@@ -1257,7 +1259,7 @@ export default function Home() {
                   {onglet === 'manuel' && (
                     <div className="flex flex-col gap-4 sm:gap-6">
                       {/* 🟩 Bloc classique : main d'œuvre + pièces */}
-                      <Card title="📁 Détail des prestations">
+                      <Card title="📁 Prestations principales">
                         <p className="text-sm text-gray-500 mb-2">
                           👷 Vous pouvez adapter le nom de cette catégorie selon votre activité : «
                           main d’œuvre », « prestation », « services », etc en appuyant bien sur
@@ -1291,12 +1293,12 @@ export default function Home() {
                           setAfficher={setAfficherPieces}
                           nomCategorie={nomPieces}
                           setNomCategorie={setNomPieces}
-                          secteurActif={secteurActif}
+                          secteurActif="global"
                         />
                       </Card>
 
                       {/* 🟦 Bloc séparé : catégories dynamiques */}
-                      <Card title="📦 Catégories personnalisées et enregistrées">
+                      <Card title="📦 Prestations personnalisées et enregistrées">
                         {/* 🔁 Catégories dynamiques en cours */}
                         {categoriesDynamiques.map((cat, index) => (
                           <div key={index} className="mb-4 sm:mb-6">
@@ -1911,7 +1913,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
 
                   {/* Bouton d'export PDF */}
 
-                  <Card title="📤 Export & Historique">
+                  <Card title="📤 Export & Historique" initialOpen={true}>
                     <div className="flex flex-col gap-4">
                       <Button
                         onClick={async () => {

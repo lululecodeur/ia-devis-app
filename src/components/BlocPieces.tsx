@@ -1,8 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Button from '@/components/ui/bouton';
+import LigneDraggablePiece from '@/components/LigneDraggablePiece';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 
 interface LignePiece {
+  id: string;
   designation: string;
   prixAchat: number;
   margePourcent: number;
@@ -34,11 +38,14 @@ export default function BlocPieces({
   secteurActif?: string;
 }) {
   const [prestationsSauvegardees, setPrestationsSauvegardees] = useState<LignePiece[]>([]);
+  // toujours en haut de ton composant, hors du JSX
+  const sensors = useSensors(useSensor(PointerSensor));
 
   const ajouterLigne = () => {
     setLignes([
       ...lignes,
       {
+        id: crypto.randomUUID(), // ✅ ID requis pour le drag
         designation: '',
         prixAchat: 0,
         margePourcent: 0,
@@ -49,24 +56,22 @@ export default function BlocPieces({
     ]);
   };
 
-  const modifierLigne = (index: number, champ: keyof LignePiece, valeur: string | number) => {
-    const copie = [...lignes];
-    if (
-      champ === 'prixAchat' ||
-      champ === 'margePourcent' ||
-      champ === 'quantite' ||
-      champ === 'prixManuel'
-    ) {
-      copie[index][champ] = parseFloat(String(valeur).replace(',', '.')) || 0;
-    } else {
-      copie[index][champ] = valeur as never;
-    }
+  const modifierLigne = (id: string, champ: keyof LignePiece, valeur: string | number) => {
+    const copie = lignes.map(ligne => {
+      if (ligne.id !== id) return ligne;
+      return {
+        ...ligne,
+        [champ]:
+          champ === 'designation' || champ === 'mode'
+            ? valeur
+            : parseFloat(String(valeur).replace(',', '.')) || 0,
+      };
+    });
     setLignes(copie);
   };
 
-  const supprimerLigne = (index: number) => {
-    const copie = [...lignes];
-    copie.splice(index, 1);
+  const supprimerLigne = (id: string) => {
+    const copie = lignes.filter(ligne => ligne.id !== id);
     setLignes(copie);
   };
 
@@ -79,9 +84,17 @@ export default function BlocPieces({
   }, []);
 
   const sauvegarderLigne = (ligne: LignePiece) => {
-    if (!secteurActif) return;
+    console.log('➡️ Sauvegarde déclenchée dans BlocPieces avec', ligne);
+
+    if (!secteurActif) {
+      console.warn('❌ secteurActif est undefined, impossible de sauvegarder');
+      return;
+    }
+
     const cle = `prestationsPieces_${secteurActif}`;
-    const nouvelleListe = [...prestationsSauvegardees, ligne];
+
+    const nouvelleListe = [...prestationsSauvegardees.filter(p => p.id !== ligne.id), ligne];
+
     localStorage.setItem(cle, JSON.stringify(nouvelleListe));
     setPrestationsSauvegardees(nouvelleListe);
     alert('✅ Prestation enregistrée');
@@ -164,123 +177,49 @@ export default function BlocPieces({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm border-separate border-spacing-y-2">
-          <thead>
-            <tr className="text-left text-xs uppercase text-gray-600 tracking-wider">
-              <th className="px-3 py-2 bg-gray-100 rounded-l-lg">Désignation</th>
-              <th className="px-3 py-2 bg-gray-100">Prix d’achat (€)</th>
-              <th className="px-3 py-2 bg-gray-100">% Marge</th>
-              <th className="px-3 py-2 bg-gray-100">Quantité</th>
-              <th className="px-3 py-2 bg-gray-100">Mode</th>
-              <th className="px-3 py-2 bg-gray-100">Prix fixe (€)</th>
-              <th className="px-3 py-2 bg-gray-100 rounded-r-lg text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lignes.map((ligne, index) => (
-              <tr key={index} className="bg-white shadow-sm rounded-xl">
-                <td className="px-3 py-2">
-                  <input
-                    className="w-full bg-transparent text-sm"
-                    value={ligne.designation}
-                    onChange={e => modifierLigne(index, 'designation', e.target.value)}
-                    placeholder="Désignation"
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    type="text"
-                    className={`w-full bg-transparent text-sm ${
-                      ligne.mode === 'manuel' ? 'text-gray-400' : ''
-                    }`}
-                    value={formatNombre(ligne.prixAchat)}
-                    onChange={e => modifierLigne(index, 'prixAchat', e.target.value)}
-                    disabled={ligne.mode === 'manuel'}
-                    placeholder="0"
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    type="text"
-                    className={`w-full bg-transparent text-sm ${
-                      ligne.mode === 'manuel' ? 'text-gray-400' : ''
-                    }`}
-                    value={formatNombre(ligne.margePourcent)}
-                    onChange={e => modifierLigne(index, 'margePourcent', e.target.value)}
-                    disabled={ligne.mode === 'manuel'}
-                    placeholder="0"
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    type="text"
-                    className="w-full bg-transparent text-sm"
-                    value={formatNombre(ligne.quantite)}
-                    onChange={e => modifierLigne(index, 'quantite', e.target.value)}
-                    placeholder="1"
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <div className="inline-flex rounded-md border border-gray-300 overflow-hidden text-sm w-full">
-                    <button
-                      type="button"
-                      onClick={() => modifierLigne(index, 'mode', 'calculé')}
-                      className={`w-1/2 px-3 py-1 transition-colors ${
-                        ligne.mode === 'calculé'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Prix avec marge
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => modifierLigne(index, 'mode', 'manuel')}
-                      className={`w-1/2 px-3 py-1 transition-colors ${
-                        ligne.mode === 'manuel'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Prix fixe
-                    </button>
-                  </div>
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    type="text"
-                    className={`w-full bg-transparent text-sm ${
-                      ligne.mode === 'calculé' ? 'text-gray-400' : ''
-                    }`}
-                    value={formatNombre(ligne.prixManuel || 0)}
-                    onChange={e => modifierLigne(index, 'prixManuel', e.target.value)}
-                    disabled={ligne.mode === 'calculé'}
-                    placeholder="0"
-                  />
-                </td>
-                <td className="px-3 py-2 text-center">
-                  <Button
-                    onClick={() => supprimerLigne(index)}
-                    variant="outline"
-                    size="sm"
-                    title="Supprimer cette ligne"
-                  >
-                    Supp. cette ligne
-                  </Button>
-                  <Button
-                    onClick={() => sauvegarderLigne(ligne)}
-                    className="mt-2"
-                    variant="outline"
-                    size="sm"
-                    title="Sauvegarder cette prestation"
-                  >
-                    Sauvegarder cette presta.
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={event => {
+            const { active, over } = event;
+            if (!over || active.id === over.id) return;
+            const oldIndex = lignes.findIndex(l => l.id === active.id);
+            const newIndex = lignes.findIndex(l => l.id === over.id);
+            setLignes(arrayMove(lignes, oldIndex, newIndex));
+          }}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-separate border-spacing-y-2">
+              <thead>
+                <tr className="text-left text-xs uppercase text-gray-600 tracking-wider">
+                  <th className="px-2 py-2" />
+                  {/* ✅ pas de texte ici */}
+                  <th className="px-3 py-2 bg-gray-100">Désignation</th>
+                  <th className="px-3 py-2 bg-gray-100">Prix d’achat (€)</th>
+                  <th className="px-3 py-2 bg-gray-100">% Marge</th>
+                  <th className="px-3 py-2 bg-gray-100">Quantité</th>
+                  <th className="px-3 py-2 bg-gray-100">Mode</th>
+                  <th className="px-3 py-2 bg-gray-100">Prix fixe (€)</th>
+                  <th className="px-3 py-2 bg-gray-100 text-center">Actions</th>
+                </tr>
+              </thead>
+
+              <SortableContext items={lignes.map(l => l.id)} strategy={verticalListSortingStrategy}>
+                <tbody>
+                  {lignes.map((ligne, index) => (
+                    <LigneDraggablePiece
+                      key={ligne.id}
+                      ligne={ligne}
+                      modifierLigne={modifierLigne}
+                      supprimerLigne={() => supprimerLigne(ligne.id)}
+                      sauvegarderLigne={() => sauvegarderLigne(ligne)}
+                    />
+                  ))}
+                </tbody>
+              </SortableContext>
+            </table>
+          </div>
+        </DndContext>
       </div>
 
       <button
@@ -337,7 +276,9 @@ export default function BlocPieces({
                 <div className="flex gap-2">
                   <button
                     className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-                    onClick={() => setLignes([...lignes, { ...prestation }])}
+                    onClick={() =>
+                      setLignes([...lignes, { ...prestation, id: crypto.randomUUID() }])
+                    }
                   >
                     ➕ Ajouter
                   </button>

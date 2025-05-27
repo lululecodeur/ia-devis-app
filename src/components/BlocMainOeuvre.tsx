@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Button from '@/components/ui/bouton';
 
 interface LigneMainOeuvre {
   designation: string;
@@ -159,7 +160,7 @@ export default function BlocMainOeuvre({
         </div>
         <button
           onClick={() => setReplie(true)}
-          className="text-sm text-gray-500 hover:text-gray-700 underline"
+          className="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
         >
           🔽 Réduire
         </button>
@@ -251,20 +252,23 @@ export default function BlocMainOeuvre({
                   />
                 </td>
                 <td className="px-3 py-2 text-center">
-                  <button
+                  <Button
                     onClick={() => supprimerLigne(index)}
-                    className="text-red-500 hover:text-red-700 mr-2"
+                    variant="outline"
+                    size="sm"
                     title="Supprimer cette ligne"
                   >
-                    🗑️
-                  </button>
-                  <button
+                    Supp. cette ligne
+                  </Button>
+                  <Button
                     onClick={() => sauvegarderLigne(ligne)}
-                    className="text-green-600 hover:text-green-800"
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
                     title="Sauvegarder cette prestation"
                   >
-                    💾
-                  </button>
+                    Sauvegarder cette presta.
+                  </Button>
                 </td>
               </tr>
             ))}
@@ -319,14 +323,16 @@ export default function BlocMainOeuvre({
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <button
-                    className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onClick={() => setLignes([...lignes, { ...prestation }])}
                   >
                     ➕ Ajouter
-                  </button>
-                  <button
-                    className="text-sm bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200"
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
                     onClick={() => {
                       const confirm = window.confirm('🗑️ Supprimer cette prestation ?');
                       if (!confirm) return;
@@ -342,7 +348,7 @@ export default function BlocMainOeuvre({
                     }}
                   >
                     Supprimer
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}

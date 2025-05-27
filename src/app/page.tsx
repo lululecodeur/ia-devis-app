@@ -1898,7 +1898,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                         variant="success"
                         size="md"
                       >
-                        Exporter le deviss
+                        Exporter le devis
                       </Button>
                     </div>
                   )}
@@ -2093,7 +2093,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                         variant="success"
                         size="lg"
                       >
-                        Exporter le deviss
+                        Exporter le devis
                       </Button>
                       <div className="flex justify-center mt-4">
                         <Link href="/historique">

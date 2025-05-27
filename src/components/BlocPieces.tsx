@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Button from '@/components/ui/bouton';
 
 interface LignePiece {
   designation: string;
@@ -252,20 +253,23 @@ export default function BlocPieces({
                   />
                 </td>
                 <td className="px-3 py-2 text-center">
-                  <button
+                  <Button
                     onClick={() => supprimerLigne(index)}
-                    className="text-red-500 hover:text-red-700 mr-2"
+                    variant="outline"
+                    size="sm"
                     title="Supprimer cette ligne"
                   >
-                    🗑️
-                  </button>
-                  <button
+                    Supp. cette ligne
+                  </Button>
+                  <Button
                     onClick={() => sauvegarderLigne(ligne)}
-                    className="text-green-600 hover:text-green-800"
+                    className="mt-2"
+                    variant="outline"
+                    size="sm"
                     title="Sauvegarder cette prestation"
                   >
-                    💾
-                  </button>
+                    Sauvegarder cette presta.
+                  </Button>
                 </td>
               </tr>
             ))}

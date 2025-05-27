@@ -128,7 +128,7 @@ export default function BlocCategorie({
 
         <button
           onClick={() => setReplie(true)}
-          className="text-sm text-gray-500 hover:text-gray-700 underline"
+          className="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
         >
           🔽 Réduire
         </button>
@@ -168,7 +168,7 @@ export default function BlocCategorie({
                 className="w-48 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="texte">Texte</option>
-                <option value="quantite">Qté</option>
+                <option value="quantite">Quantité</option>
                 <option value="prix">Prix</option>
                 <option value="prixAvecMarge">Prix avec marge</option>
               </select>

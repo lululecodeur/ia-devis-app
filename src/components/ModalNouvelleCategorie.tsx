@@ -22,7 +22,7 @@ export default function ModalNouvelleCategorie({ onClose, onCreate }: Props) {
   const [colonnes, setColonnes] = useState<ColonneCategorie[]>([
     { nom: 'Désignation', type: 'texte' },
     { nom: 'Unité', type: 'texte' },
-    { nom: 'Quantité', type: 'quantite' },
+    { nom: 'Qté', type: 'quantite' },
     { nom: 'PU HT (€)', type: 'prix' },
   ]);
 

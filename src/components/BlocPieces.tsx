@@ -151,7 +151,7 @@ export default function BlocPieces({
         </div>
         <button
           onClick={() => setReplie(true)}
-          className="text-sm text-gray-500 hover:text-gray-700 underline"
+          className="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
         >
           🔽 Réduire
         </button>

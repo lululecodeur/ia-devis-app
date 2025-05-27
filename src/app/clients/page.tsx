@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Button from '@/components/ui/bouton';
 
 interface Client {
   nom: string;
@@ -195,24 +196,15 @@ export default function ClientsPage() {
             />
 
             <div className="flex flex-wrap gap-4 mt-4">
-              <button
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                onClick={() => sauvegarderClient(index)}
-              >
+              <Button variant="primary" size="md" onClick={() => sauvegarderClient(index)}>
                 💾 Sauvegarder
-              </button>
-              <button
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                onClick={() => reutiliserClient(clients[index])}
-              >
+              </Button>
+              <Button variant="success" size="md" onClick={() => reutiliserClient(clients[index])}>
                 ✅ Réutiliser
-              </button>
-              <button
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-                onClick={() => supprimerClient(index)}
-              >
+              </Button>
+              <Button variant="danger" size="md" onClick={() => supprimerClient(index)}>
                 🗑️ Supprimer
-              </button>
+              </Button>
             </div>
 
             <div className="mt-4">
@@ -250,9 +242,9 @@ export default function ClientsPage() {
 
       <div className="sticky bottom-4 z-50 flex justify-center mt-8">
         <Link href="/?mode=devis">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm">
+          <Button variant="primary" size="sm">
             ← Retour au générateur de devis
-          </button>
+          </Button>
         </Link>
       </div>
     </main>

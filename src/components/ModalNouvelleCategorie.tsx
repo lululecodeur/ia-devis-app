@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Button from '@/components/ui/bouton';
 
 interface ColonneCategorie {
   nom: string;
@@ -102,35 +103,33 @@ export default function ModalNouvelleCategorie({ onClose, onCreate }: Props) {
                   <option value="prix">Prix</option>
                   <option value="prixAvecMarge">Prix avec marge</option>
                 </select>
-                <button
+                <Button
                   onClick={() => supprimerColonne(index)}
-                  className="text-red-600 hover:text-red-800 text-xl"
+                  variant="danger"
+                  size="sm"
                   title="Supprimer"
                 >
                   ✖
-                </button>
+                </Button>
               </div>
             ))}
           </div>
 
-          <button onClick={ajouterColonne} className="mt-2 text-sm text-blue-600 hover:underline">
+          <Button onClick={ajouterColonne} variant="outline" size="sm" className="mt-4">
             ➕ Ajouter une colonne dans le tableau
-          </button>
+          </Button>
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-sm"
+            className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-sm cursor-pointer"
           >
             Annuler
           </button>
-          <button
-            onClick={valider}
-            className="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white text-sm"
-          >
+          <Button onClick={valider} variant="success" size="md">
             ✅ Créer la catégorie
-          </button>
+          </Button>
         </div>
       </div>
     </div>

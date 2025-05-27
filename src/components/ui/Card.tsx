@@ -35,7 +35,7 @@ export default function Card({
           ouvert ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <div className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-4">{children}</div>
+        <div className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-4 overflow-x-auto">{children}</div>
       </div>
     </div>
   );

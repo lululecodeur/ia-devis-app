@@ -72,6 +72,12 @@ export default function BlocPieces({
 
   const [replie, setReplie] = useState(!afficher);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      setReplie(true);
+    }
+  }, []);
+
   const sauvegarderLigne = (ligne: LignePiece) => {
     if (!secteurActif) return;
     const cle = `prestationsPieces_${secteurActif}`;

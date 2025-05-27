@@ -32,6 +32,12 @@ export default function BlocMainOeuvre({
   secteurActif?: string;
 }) {
   const [replie, setReplie] = useState(!afficher);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      setReplie(true);
+    }
+  }, []);
+
   const [prestationsSauvegardees, setPrestationsSauvegardees] = useState<LigneMainOeuvre[]>([]);
 
   const ajouterLigne = () => {

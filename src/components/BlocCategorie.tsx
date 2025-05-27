@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '@/components/ui/bouton';
 
 type LigneCustom = { [cle: string]: any };
@@ -43,6 +43,11 @@ export default function BlocCategorie({
     val !== undefined ? String(cleanNumericInput(String(val))) : '';
 
   const [replie, setReplie] = useState(!categorie.afficher);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      setReplie(true);
+    }
+  }, []);
 
   const ajouterLigne = () => {
     const nouvelleLigne: LigneCustom = {};

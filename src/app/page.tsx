@@ -1369,12 +1369,9 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
 
                         {/* ➕ Ajout d'une nouvelle catégorie */}
                         <div className="mt-10">
-                          <button
-                            onClick={() => setShowModal(true)}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition mt-6 sm:mt-10"
-                          >
-                            ➕ Ajouter une catégorie
-                          </button>
+                          <Button onClick={() => setShowModal(true)} variant="primary" size="md">
+                            Ajouter une catégorie
+                          </Button>
 
                           {showModal && (
                             <ModalNouvelleCategorie

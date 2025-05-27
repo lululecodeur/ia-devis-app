@@ -122,7 +122,7 @@ export default function ClientsPage() {
 
   return (
     <main className="p-8 max-w-3xl mx-auto min-h-screen bg-gray-50 text-black">
-      <h1 className="text-3xl font-bold mb-6">📋 Historique Clients</h1>
+      <h1 className="text-3xl font-bold mb-4 sm:mb-6">📋 Historique Clients</h1>
 
       {showConfirmation && (
         <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4 text-sm shadow">
@@ -136,7 +136,7 @@ export default function ClientsPage() {
         clients.map((client, index) => (
           <div
             key={index}
-            className="bg-white border rounded-xl p-6 mb-6 shadow space-y-2 text-black"
+            className="bg-white border rounded-xl p-6 mb-4 sm:mb-6 shadow space-y-2 text-black"
           >
             <input
               className="w-full border p-2 rounded text-black"

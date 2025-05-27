@@ -690,8 +690,8 @@ export default function Home() {
     <>
       {mode === 'accueil' && (
         <div className="text-center mt-20">
-          <h1 className="text-3xl font-bold mb-4">Bienvenue 👋</h1>
-          <p className="text-gray-600 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-4">Bienvenue 👋</h1>
+          <p className="text-gray-600 mb-4 sm:mb-6">
             Commencez par choisir un secteur pour générer votre premier devis.
           </p>
           <Button
@@ -708,15 +708,15 @@ export default function Home() {
       )}
 
       {mode === 'devis' && (
-        <main className="min-h-screen p-8 bg-gray-100 font-sans text-black">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 max-w-screen-xl mx-auto">
-            <div className="w-full min-w-0 flex flex-col gap-6">
+        <main className="min-h-screen p-4 sm:p-8 bg-gray-100 font-sans text-black text-sm sm:text-base">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 max-w-full sm:max-w-screen-md lg:max-w-screen-xl mx-auto">
+            <div className="w-full min-w-0 flex flex-col gap-4 sm:gap-6">
               {/* 🟩 Colonne gauche : Formulaire */}
               <div className="w-full min-w-0 space-y-6">
                 {showSecteurModal && (
                   <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md text-center">
-                      <h2 className="text-xl font-semibold mb-4">
+                      <h2 className="text-lg sm:text-xl font-semibold mb-4">
                         Quels sont vos domaines d'expertise ?
                       </h2>
 
@@ -724,7 +724,7 @@ export default function Home() {
                       <input
                         type="text"
                         placeholder="Ex : Électricien, Peintre, Photographe..."
-                        className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={secteurActif}
                         onChange={e => setSecteurActif(e.target.value)}
                       />
@@ -820,9 +820,11 @@ export default function Home() {
                   </div>
                 )}
 
-                <h1 className="text-3xl font-bold mb-6 text-center">🧾 Génère ton devis</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-center">
+                  🧾 Génère ton devis
+                </h1>
 
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex justify-between items-center mb-4 sm:mb-6">
                   <button
                     onClick={() => setShowSecteurModal(true)}
                     className="text-sm text-blue-600 underline hover:text-blue-800"
@@ -833,7 +835,7 @@ export default function Home() {
 
                 <div className="w-full flex flex-col space-y-8">
                   <Card title="Logo de l’entreprise (optionnel)" className="w-full">
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-4 sm:gap-6">
                       {!logo && (
                         <div className="flex flex-col items-start gap-2">
                           <label htmlFor="logo-upload" className="text-sm font-medium">
@@ -881,7 +883,7 @@ export default function Home() {
                                 max="300"
                                 value={hauteurLogo}
                                 onChange={e => setHauteurLogo(Number(e.target.value))}
-                                className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
                             </div>
 
@@ -951,12 +953,12 @@ export default function Home() {
                     </div>
                   </Card>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <Card title="📤 Informations de l'émetteur">
                       <div className="flex flex-col gap-4">
                         <label className="block font-medium">Nom de l'entreprise</label>
                         <input
-                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           type="text"
                           inputMode="text"
                           autoComplete="organization"
@@ -970,7 +972,7 @@ export default function Home() {
 
                         <label className="block font-medium">Adresse</label>
                         <textarea
-                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           autoComplete="street-address"
                           aria-label="Adresse de l'entreprise"
                           placeholder="Ex : 12 rue des Lilas, 75000 Paris"
@@ -981,7 +983,7 @@ export default function Home() {
 
                         <label className="block font-medium">SIRET</label>
                         <input
-                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           inputMode="numeric"
                           autoComplete="off"
                           aria-label="Numéro SIRET"
@@ -992,7 +994,7 @@ export default function Home() {
 
                         <label className="block font-medium">Email</label>
                         <input
-                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           type="email"
                           inputMode="email"
                           autoComplete="email"
@@ -1008,7 +1010,7 @@ export default function Home() {
 
                         <label className="block font-medium">Téléphone</label>
                         <input
-                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           type="tel"
                           inputMode="tel"
                           autoComplete="tel"
@@ -1019,7 +1021,7 @@ export default function Home() {
                         />
                         <label className="block font-medium">IBAN</label>
                         <input
-                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           type="text"
                           placeholder="Ex : FR76 1234 5678 9012 3456 7890 123"
                           value={iban}
@@ -1028,7 +1030,7 @@ export default function Home() {
 
                         <label className="block font-medium">BIC</label>
                         <input
-                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           type="text"
                           placeholder="Ex : AGRIFRPP"
                           value={bic}
@@ -1054,7 +1056,7 @@ export default function Home() {
                       <div className="flex flex-col gap-4">
                         <label className="block font-medium">Nom du client</label>
                         <input
-                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           type="text"
                           inputMode="text"
                           autoComplete="name"
@@ -1066,7 +1068,7 @@ export default function Home() {
 
                         <label className="block font-medium">Adresse du client</label>
                         <textarea
-                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           autoComplete="street-address"
                           aria-label="Adresse du client"
                           placeholder="Ex : 7 avenue de la République, 75011 Paris"
@@ -1077,7 +1079,7 @@ export default function Home() {
 
                         <label className="block font-medium">Email du client</label>
                         <input
-                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           type="email"
                           inputMode="email"
                           autoComplete="email"
@@ -1089,7 +1091,7 @@ export default function Home() {
 
                         <label className="block font-medium">Téléphone du client</label>
                         <input
-                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           type="tel"
                           inputMode="tel"
                           autoComplete="tel"
@@ -1164,7 +1166,7 @@ export default function Home() {
                     <div className="flex flex-col gap-4">
                       {/* Titre personnalisable */}
                       <input
-                        className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={titre}
                         onChange={e => setTitre(e.target.value)}
                         placeholder="Titre du devis"
@@ -1173,7 +1175,7 @@ export default function Home() {
                       {/* Menu déroulant de sélection */}
                       <label className="block font-medium">Secteur sélectionné</label>
                       <select
-                        className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={secteurActif}
                         onChange={e => setSecteurActif(e.target.value)}
                       >
@@ -1245,7 +1247,7 @@ export default function Home() {
                   </Card>
                   <Card title="🧾 Numéro du devis">
                     <input
-                      className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={numeroDevis}
                       onChange={e => setNumeroDevis(e.target.value)}
                       placeholder="Ex : DEV-2025-001"
@@ -1253,7 +1255,7 @@ export default function Home() {
                   </Card>
 
                   {onglet === 'manuel' && (
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-4 sm:gap-6">
                       {/* 🟩 Bloc classique : main d'œuvre + pièces */}
                       <Card title="📁 Détail des prestations">
                         <p className="text-sm text-gray-500 mb-2">
@@ -1297,7 +1299,7 @@ export default function Home() {
                       <Card title="📦 Catégories personnalisées et enregistrées">
                         {/* 🔁 Catégories dynamiques en cours */}
                         {categoriesDynamiques.map((cat, index) => (
-                          <div key={index} className="mb-6">
+                          <div key={index} className="mb-4 sm:mb-6">
                             <BlocCategorie
                               categorie={cat}
                               onUpdate={updatedCat => {
@@ -1369,7 +1371,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                         <div className="mt-10">
                           <button
                             onClick={() => setShowModal(true)}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition mt-10"
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition mt-6 sm:mt-10"
                           >
                             ➕ Ajouter une catégorie
                           </button>
@@ -1385,7 +1387,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                         </div>
 
                         {/* 📂 Catégories enregistrées */}
-                        <div className="mt-10">
+                        <div className="mt-6 sm:mt-10">
                           <h3 className="text-md font-semibold text-gray-700 mb-2">
                             📁 Catégories enregistrées
                           </h3>
@@ -1463,7 +1465,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                           Brief de la prestation (pour génération IA)
                         </label>
                         <textarea
-                          className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           aria-label="Brief de la prestation"
                           placeholder="Ex : Pose d’un chauffe-eau 200L mural avec déplacement évier"
                           value={brief}
@@ -1487,7 +1489,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                               <tr key={index}>
                                 <td className="p-2 border">
                                   <input
-                                    className="w-full p-3 text-base"
+                                    className="w-full p-3 text-sm sm:text-base"
                                     type="text"
                                     inputMode="text"
                                     autoComplete="off"
@@ -1502,7 +1504,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                                 </td>
                                 <td className="p-2 border">
                                   <input
-                                    className="w-full p-3 text-base"
+                                    className="w-full p-3 text-sm sm:text-base"
                                     type="text"
                                     inputMode="text"
                                     autoComplete="off"
@@ -1518,7 +1520,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                                 <td className="p-2 border">
                                   <input
                                     type="number"
-                                    className="w-full p-3 text-base"
+                                    className="w-full p-3 text-sm sm:text-base"
                                     inputMode="decimal"
                                     autoComplete="off"
                                     aria-label={`Prix unitaire tarif ${index + 1}`}
@@ -1613,7 +1615,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                     <div className="flex flex-col gap-4">
                       <label className="block font-medium mb-1">Mentions légales</label>
                       <textarea
-                        className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Ex : Devis valable 15 jours..."
                         value={mentions}
                         onChange={e => setMentions(e.target.value)}
@@ -1631,7 +1633,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                           <input
                             type="number"
                             onWheel={e => e.currentTarget.blur()}
-                            className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={tvaTaux.toString()}
                             onChange={e => setTvaTaux(cleanNumericInput(e.target.value))}
                           />
@@ -1647,7 +1649,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                           <input
                             type="number"
                             onWheel={e => e.currentTarget.blur()}
-                            className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={remisePourcent.toString()}
                             onChange={e => setRemisePourcent(cleanNumericInput(e.target.value))}
                           />
@@ -1663,7 +1665,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                           <input
                             type="number"
                             onWheel={e => e.currentTarget.blur()}
-                            className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={acomptePourcent.toString()}
                             onChange={e => setAcomptePourcent(cleanNumericInput(e.target.value))}
                           />
@@ -1679,7 +1681,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                         Texte d’introduction (facultatif)
                       </label>
                       <textarea
-                        className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Ex : Merci pour votre confiance, voici le détail de notre proposition..."
                         value={intro}
                         onChange={e => setIntro(e.target.value)}
@@ -1690,7 +1692,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                         Remarques ou informations complémentaires (facultatif)
                       </label>
                       <textarea
-                        className="w-full p-3 border border-gray-300 rounded text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Ex : N'hésitez pas à nous contacter pour toute question complémentaire."
                         value={conclusion}
                         onChange={e => setConclusion(e.target.value)}
@@ -1699,7 +1701,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                   </Card>
 
                   <Card title="🖊️ Signatures numériques">
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-4 sm:gap-6">
                       <SignatureBlock
                         label="✍️ Signature du client"
                         value={signatureClient}
@@ -2112,9 +2114,46 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                 </div>
               </div>
             </div>
+            {/* Aperçu PDF visible sur grand écran, scrollable seulement sur mobile */}
+            <div className="hidden lg:block">
+              <div className="mx-auto w-[794px] sticky top-8">
+                <PreviewDevis
+                  logo={logo}
+                  hauteurLogo={hauteurLogo}
+                  numeroDevis={numeroDevis}
+                  emetteur={emetteur}
+                  recepteur={recepteur}
+                  titre={titre}
+                  intro={intro}
+                  lignesMainOeuvre={lignesMainOeuvre}
+                  lignesPieces={lignesPieces}
+                  afficherMainOeuvre={afficherMainOeuvre}
+                  afficherPieces={afficherPieces}
+                  nomMainOeuvre={nomMainOeuvre}
+                  nomPieces={nomPieces}
+                  categoriesDynamiques={categoriesDynamiques}
+                  totalHTBrut={totalHTBrut}
+                  remise={remise}
+                  remisePourcent={remisePourcent}
+                  totalHT={totalHT}
+                  tvaTaux={tvaTaux}
+                  tva={tva}
+                  totalTTC={totalTTC}
+                  acompte={acompte}
+                  acomptePourcent={acomptePourcent}
+                  mentions={mentions}
+                  conclusion={conclusion}
+                  signatureClient={signatureClient}
+                  signatureEmetteur={signatureEmetteur}
+                  iban={iban}
+                  bic={bic}
+                />
+              </div>
+            </div>
 
-            <div className="hidden lg:block w-[794px] shrink-0">
-              <div className="sticky top-8">
+            {/* Aperçu PDF visible uniquement sur mobile avec scroll horizontal */}
+            <div className="lg:hidden overflow-x-auto">
+              <div className="min-w-[794px]">
                 <PreviewDevis
                   logo={logo}
                   hauteurLogo={hauteurLogo}
@@ -2152,24 +2191,22 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
 
           {mode === 'devis' && (
             <div className="fixed bottom-4 right-4 z-50 lg:hidden">
-              <button
+              <Button
                 onClick={() => setAfficherPDFMobile(prev => !prev)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg"
+                variant="primary"
+                size="sm"
               >
                 {afficherPDFMobile ? '❌ Fermer PDF' : '🧾 Voir l’aperçu PDF'}
-              </button>
+              </Button>
             </div>
           )}
 
           {afficherPDFMobile && (
             <div className="fixed inset-0 bg-white overflow-auto z-40 p-4 lg:hidden">
               <div className="flex justify-end mb-4">
-                <button
-                  onClick={() => setAfficherPDFMobile(false)}
-                  className="text-sm text-red-600 underline"
-                >
+                <Button onClick={() => setAfficherPDFMobile(false)} variant="primary" size="sm">
                   ✖ Fermer l’aperçu
-                </button>
+                </Button>
               </div>
 
               <div className="overflow-x-auto">

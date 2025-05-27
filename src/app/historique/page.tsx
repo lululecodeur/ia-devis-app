@@ -79,7 +79,7 @@ export default function HistoriquePage() {
 
   return (
     <div className="max-w-4xl mx-auto p-8">
-      <h1 className="text-2xl font-bold mb-6">📁 Historique des devis</h1>
+      <h1 className="text-2xl font-bold mb-4 sm:mb-6">📁 Historique des devis</h1>
 
       {loading ? (
         <p>Chargement...</p>

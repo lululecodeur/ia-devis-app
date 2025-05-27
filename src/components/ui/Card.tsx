@@ -19,7 +19,7 @@ export default function Card({
     <div className={`w-full bg-white rounded-xl shadow-sm border border-gray-200 ${className}`}>
       <button
         onClick={() => setOuvert(!ouvert)}
-        className="w-full flex justify-between items-center px-4 py-3 sm:px-6 transition-colors hover:bg-gray-50 rounded-t-xl cursor-pointer group"
+        className="w-full flex justify-between items-center px-4 py-2 sm:px-6 sm:py-3 transition-colors hover:bg-gray-50 rounded-t-xl cursor-pointer group"
       >
         <span className="text-base sm:text-lg font-semibold text-gray-800">{title}</span>
         <ChevronDown
@@ -35,7 +35,7 @@ export default function Card({
           ouvert ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <div className="px-4 pb-4 sm:px-6 space-y-4">{children}</div>
+        <div className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-4">{children}</div>
       </div>
     </div>
   );

@@ -951,7 +951,7 @@ Le nom est automatiquement sauvegardé et sera proposé par défaut lors de la c
                       {!logo && (
                         <div className="flex flex-col items-start gap-2">
                           <label htmlFor="logo-upload" className="text-sm font-medium">
-                            Uploader un fichier image
+                            Uploader un fichier image (jpg...)
                           </label>
                           <input
                             id="logo-upload"

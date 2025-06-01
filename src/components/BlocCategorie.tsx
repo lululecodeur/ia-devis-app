@@ -50,14 +50,31 @@ function LigneSortable({
     backgroundColor: '#fff',
   };
 
+  const parseNombreFr = (val: any): number => {
+    if (typeof val === 'number') return val;
+    if (typeof val !== 'string') return 0;
+    return parseFloat(val.replace(',', '.')) || 0;
+  };
+
   const cleanNumericInput = (val: string): number => {
     const clean = val.replace(/^0+(\d)/, '$1');
     const parsed = parseFloat(clean);
     return isNaN(parsed) ? 0 : Math.round(parsed * 100) / 100;
   };
 
-  const afficherNettoye = (val: any): string =>
-    val !== undefined ? String(cleanNumericInput(String(val))) : '';
+  function afficherNettoye(valeur: any, type?: string): string {
+    const str = String(valeur ?? '');
+
+    if (type === 'quantite') {
+      if (str.includes(',')) return str; // on garde 1,5 tel quel
+      const n = parseFloat(str.replace(',', '.'));
+      if (isNaN(n)) return '';
+      return n % 1 === 0 ? String(n) : str;
+    }
+
+    // Pour prix, prixAvecMarge : on laisse la valeur telle quelle
+    return str;
+  }
 
   return (
     <tr ref={setNodeRef} style={style}>
@@ -104,9 +121,12 @@ function LigneSortable({
         return (
           <td key={colIndex} className="px-3 py-2">
             <input
-              type={col.type === 'texte' ? 'text' : 'number'}
+              type="text"
+              step={col.type === 'quantite' ? '1' : '0.01'}
               onWheel={e => e.currentTarget.blur()}
-              value={col.type === 'texte' ? ligne[cle] ?? '' : afficherNettoye(ligne[cle])}
+              value={
+                col.type === 'texte' ? ligne[cle] ?? '' : afficherNettoye(ligne[cle], col.type)
+              }
               onChange={e => onUpdate(index, cle, e.target.value)}
               className="w-full min-w-[80px] text-[16px] bg-transparent border border-gray-200 rounded px-2"
             />
@@ -178,7 +198,7 @@ export default function BlocCategorie({
     if (colonne.type === 'texte') {
       lignes[i][cle] = val;
     } else {
-      lignes[i][cle] = parseFloat(val) || 0;
+      lignes[i][cle] = val;
     }
 
     onUpdate({ ...categorie, lignes });

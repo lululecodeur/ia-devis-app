@@ -110,6 +110,16 @@ export default function PreviewDevis(props: PreviewDevisProps) {
 
   const COL_WIDTHS = ['40%', '15%', '15%', '15%', '15%'];
 
+  const formatNombreFr = (val: any): string => {
+    const n = typeof val === 'string' ? parseFloat(val.replace(',', '.')) : Number(val);
+    return isNaN(n)
+      ? '0,00'
+      : new Intl.NumberFormat('fr-FR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(n);
+  };
+
   const parseNombreFr = (val: string | number | undefined | null): number =>
     typeof val === 'number' ? val : parseFloat(val?.toString().replace(',', '.') || '0') || 0;
 
@@ -624,7 +634,9 @@ export default function PreviewDevis(props: PreviewDevisProps) {
                           }}
                         >
                           <TdContent>
-                            {typeof val === 'number' ? val.toFixed(2) : val ?? '\u00A0'}
+                            {col.type === 'prix' || col.type === 'prixAvecMarge'
+                              ? formatNombreFr(val)
+                              : val ?? '\u00A0'}
                           </TdContent>
                         </td>
                       );

@@ -6,6 +6,7 @@ import Button from '@/components/ui/bouton';
 interface LignePiece {
   id: string;
   designation: string;
+  unite: string;
   prixAchat: number;
   margePourcent: number;
   quantite: number;
@@ -34,10 +35,11 @@ export default function LigneDraggablePiece({
     backgroundColor: '#fff',
   };
 
-  const formatNombre = (valeur: number): string =>
-    Number.isNaN(valeur)
-      ? ''
-      : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 6 }).format(valeur);
+  const afficherValeur = (val: string | number) => {
+    if (val === '' || val === undefined || val === null) return '';
+    const num = typeof val === 'string' ? val.replace('.', ',') : val.toString().replace('.', ',');
+    return num;
+  };
 
   return (
     <tr ref={setNodeRef} style={style} className="bg-white shadow-sm rounded-xl">
@@ -54,14 +56,24 @@ export default function LigneDraggablePiece({
           placeholder="Désignation"
         />
       </td>
+      <td className="px-3 py-2">
+        <input
+          type="text"
+          className="w-full bg-transparent text-sm"
+          placeholder="ex: u, kg, h"
+          value={ligne.unite || ''}
+          onChange={e => modifierLigne(ligne.id, 'unite', e.target.value)}
+        />
+      </td>
 
       <td className="px-3 py-2">
         <input
           type="text"
+          placeholder="50"
           className={`w-full bg-transparent text-sm ${
             ligne.mode === 'manuel' ? 'text-gray-400' : ''
           }`}
-          value={formatNombre(ligne.prixAchat)}
+          value={afficherValeur(ligne.prixAchat)}
           onChange={e => modifierLigne(ligne.id, 'prixAchat', e.target.value)}
           disabled={ligne.mode === 'manuel'}
         />
@@ -70,10 +82,11 @@ export default function LigneDraggablePiece({
       <td className="px-3 py-2">
         <input
           type="text"
+          placeholder="10"
           className={`w-full bg-transparent text-sm ${
             ligne.mode === 'manuel' ? 'text-gray-400' : ''
           }`}
-          value={formatNombre(ligne.margePourcent)}
+          value={afficherValeur(ligne.margePourcent)}
           onChange={e => modifierLigne(ligne.id, 'margePourcent', e.target.value)}
           disabled={ligne.mode === 'manuel'}
         />
@@ -83,7 +96,7 @@ export default function LigneDraggablePiece({
         <input
           type="text"
           className="w-full bg-transparent text-sm"
-          value={formatNombre(ligne.quantite)}
+          value={afficherValeur(ligne.quantite)}
           onChange={e => modifierLigne(ligne.id, 'quantite', e.target.value)}
         />
       </td>
@@ -121,7 +134,11 @@ export default function LigneDraggablePiece({
           className={`w-full bg-transparent text-sm ${
             ligne.mode === 'calculé' ? 'text-gray-400' : ''
           }`}
-          value={formatNombre(ligne.prixManuel || 0)}
+          value={
+            ligne.prixManuel === 0 || ligne.prixManuel === undefined
+              ? ''
+              : String(ligne.prixManuel).replace('.', ',')
+          }
           onChange={e => modifierLigne(ligne.id, 'prixManuel', e.target.value)}
           disabled={ligne.mode === 'calculé'}
         />
@@ -133,21 +150,21 @@ export default function LigneDraggablePiece({
             console.log('🗑️ Suppression demandée pour', ligne.id);
             supprimerLigne(ligne.id);
           }}
-          variant="outline"
+          variant="danger"
           size="sm"
         >
-          🗑️
+          Supprimer
         </Button>
         <Button
           onClick={() => {
             console.log('💾 Sauvegarde demandée pour', ligne);
             sauvegarderLigne();
           }}
-          variant="outline"
+          variant="primary"
           size="sm"
           className="mt-2"
         >
-          💾
+          Sauvegarder cette presta
         </Button>
       </td>
     </tr>

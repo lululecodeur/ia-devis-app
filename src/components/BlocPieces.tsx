@@ -4,10 +4,12 @@ import Button from '@/components/ui/bouton';
 import LigneDraggablePiece from '@/components/LigneDraggablePiece';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import Aide from '@/components/Aide';
 
 interface LignePiece {
   id: string;
   designation: string;
+  unite: string;
   prixAchat: number;
   margePourcent: number;
   quantite: number;
@@ -47,6 +49,7 @@ export default function BlocPieces({
       {
         id: crypto.randomUUID(), // ✅ ID requis pour le drag
         designation: '',
+        unite: '', // ✅ ajout ici
         prixAchat: 0,
         margePourcent: 0,
         quantite: 1,
@@ -57,17 +60,21 @@ export default function BlocPieces({
   };
 
   const modifierLigne = (id: string, champ: keyof LignePiece, valeur: string | number) => {
-    const copie = lignes.map(ligne => {
+    const nouvellesLignes = lignes.map(ligne => {
       if (ligne.id !== id) return ligne;
-      return {
-        ...ligne,
-        [champ]:
-          champ === 'designation' || champ === 'mode'
-            ? valeur
-            : parseFloat(String(valeur).replace(',', '.')) || 0,
-      };
+
+      // Toujours garder la valeur brute (avec virgule) en string si c'est un champ numérique
+      let nouvelleValeur: string | number = valeur;
+
+      // Sécurité : forcer le type string si l'utilisateur entre une virgule
+      if (typeof valeur === 'string' && /,/.test(valeur)) {
+        nouvelleValeur = valeur;
+      }
+
+      return { ...ligne, [champ]: nouvelleValeur };
     });
-    setLignes(copie);
+
+    setLignes(nouvellesLignes);
   };
 
   const supprimerLigne = (id: string) => {
@@ -76,6 +83,26 @@ export default function BlocPieces({
   };
 
   const [replie, setReplie] = useState(!afficher);
+
+  const aidePieces = `🔩 Nom de la catégorie
+Vous pouvez renommer cette catégorie selon votre activité : Pièces, Matériaux, Fournitures, etc.
+Ce nom sera mémorisé pour vos futurs devis.
+
+📉 Affichage
+Pour ne pas inclure cette section dans le PDF, réduisez-la puis cliquez sur « Retirer du PDF ».
+
+💸 Tarification
+Deux modes sont possibles pour chaque pièce :
+• Mode calculé : vous renseignez un prix d’achat HT et une marge (%). Le prix final est automatiquement calculé :
+→ Prix = achat × (1 + marge / 100)
+• Mode manuel : vous saisissez directement un prix de vente HT, sans calcul.
+
+🛠️ Gestion des lignes
+– Vous pouvez ajouter, modifier ou supprimer les lignes manuellement.
+– Cliquez sur « Enregistrer cette pièce » pour la réutiliser dans un autre devis.
+– Pour l’ajouter rapidement, cliquez sur « Ajouter » dans l'encadré *Pièces enregistrées* (visible uniquement si au moins une pièce a été enregistrée).
+– Pour l’oublier définitivement, utilisez le bouton « Supprimer » dans cet encadré.
+`;
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 640) {
@@ -124,6 +151,23 @@ export default function BlocPieces({
     }
   }, [secteurActif]);
 
+  useEffect(() => {
+    const seen = new Set<string>();
+    const lignesCorrigees = lignes.map(ligne => {
+      let id = ligne.id || crypto.randomUUID();
+
+      // Si l'id est déjà utilisé, on en génère un nouveau
+      while (seen.has(id)) {
+        id = crypto.randomUUID();
+      }
+
+      seen.add(id);
+      return { ...ligne, id };
+    });
+
+    setLignes(lignesCorrigees);
+  }, []);
+
   if (replie) {
     return (
       <div className="border border-gray-300 p-4 rounded-lg bg-gray-50 shadow-sm mb-4">
@@ -154,7 +198,7 @@ export default function BlocPieces({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="flex items-center gap-2">
           <span>🔩</span>
           <input
@@ -168,12 +212,13 @@ export default function BlocPieces({
             className="text-lg font-semibold bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none transition"
           />
         </div>
-        <button
-          onClick={() => setReplie(true)}
-          className="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
-        >
-          🔽 Réduire
-        </button>
+
+        <div className="flex items-center gap-4">
+          <Aide titre="Aide" contenu={aidePieces} />
+          <Button onClick={() => setReplie(true)} variant="outline" size="xs">
+            🔽 Réduire
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -195,6 +240,8 @@ export default function BlocPieces({
                   <th className="px-2 py-2" />
                   {/* ✅ pas de texte ici */}
                   <th className="px-3 py-2 bg-gray-100">Désignation</th>
+                  <th className="px-3 py-2 bg-gray-100">Unité</th>
+
                   <th className="px-3 py-2 bg-gray-100">Prix d’achat (€)</th>
                   <th className="px-3 py-2 bg-gray-100">% Marge</th>
                   <th className="px-3 py-2 bg-gray-100">Quantité</th>
@@ -274,16 +321,18 @@ export default function BlocPieces({
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <button
-                    className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onClick={() =>
                       setLignes([...lignes, { ...prestation, id: crypto.randomUUID() }])
                     }
                   >
                     ➕ Ajouter
-                  </button>
-                  <button
-                    className="text-sm bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200"
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
                     onClick={() => {
                       const confirm = window.confirm('🗑️ Supprimer cette pièce ?');
                       if (!confirm) return;
@@ -298,7 +347,7 @@ export default function BlocPieces({
                     }}
                   >
                     Supprimer
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}

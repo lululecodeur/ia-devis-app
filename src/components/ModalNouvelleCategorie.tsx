@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '@/components/ui/bouton';
 
 interface ColonneCategorie {
@@ -9,6 +9,11 @@ interface ColonneCategorie {
 }
 
 interface Props {
+  mode: 'creation' | 'edition';
+  initialCategorie?: {
+    nom: string;
+    colonnes: ColonneCategorie[];
+  };
   onClose: () => void;
   onCreate: (categorie: {
     nom: string;
@@ -18,14 +23,29 @@ interface Props {
   }) => void;
 }
 
-export default function ModalNouvelleCategorie({ onClose, onCreate }: Props) {
+export default function ModalNouvelleCategorie({
+  mode,
+  initialCategorie,
+  onClose,
+  onCreate,
+}: Props) {
   const [nom, setNom] = useState('');
-  const [colonnes, setColonnes] = useState<ColonneCategorie[]>([
-    { nom: 'Désignation', type: 'texte' },
-    { nom: 'Unité', type: 'texte' },
-    { nom: 'Qté', type: 'quantite' },
-    { nom: 'PU HT (€)', type: 'prix' },
-  ]);
+  const [colonnes, setColonnes] = useState<ColonneCategorie[]>([]);
+
+  useEffect(() => {
+    if (mode === 'edition' && initialCategorie) {
+      setNom(initialCategorie.nom);
+      setColonnes(initialCategorie.colonnes);
+    } else {
+      setNom('');
+      setColonnes([
+        { nom: 'Désignation', type: 'texte' },
+        { nom: 'Unité', type: 'texte' },
+        { nom: 'Qté', type: 'quantite' },
+        { nom: 'PU HT (€)', type: 'prix' },
+      ]);
+    }
+  }, [mode, initialCategorie]);
 
   const ajouterColonne = () => {
     setColonnes([...colonnes, { nom: '', type: 'texte' }]);
@@ -58,7 +78,7 @@ export default function ModalNouvelleCategorie({ onClose, onCreate }: Props) {
     onCreate({
       nom: nom.trim(),
       colonnes: colonnesValides,
-      lignes: [],
+      lignes: [], // Tu peux adapter si tu veux conserver les lignes existantes
       afficher: true,
     });
 
@@ -68,7 +88,9 @@ export default function ModalNouvelleCategorie({ onClose, onCreate }: Props) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white rounded-xl p-6 w-full max-w-xl shadow-lg space-y-4">
-        <h2 className="text-xl font-semibold mb-2">➕ Nouvelle catégorie personnalisée</h2>
+        <h2 className="text-xl font-semibold mb-2">
+          {mode === 'creation' ? '➕ Nouvelle catégorie personnalisée' : '✏️ Modifier la catégorie'}
+        </h2>
 
         <div>
           <label className="block text-sm font-medium mb-1">Nom de la catégorie</label>
@@ -128,7 +150,7 @@ export default function ModalNouvelleCategorie({ onClose, onCreate }: Props) {
             Annuler
           </button>
           <Button onClick={valider} variant="success" size="md">
-            ✅ Créer la catégorie
+            {mode === 'creation' ? '✅ Créer la catégorie' : '💾 Enregistrer les modifications'}
           </Button>
         </div>
       </div>

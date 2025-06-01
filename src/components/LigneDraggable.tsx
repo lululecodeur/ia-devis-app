@@ -6,10 +6,11 @@ import Button from '@/components/ui/bouton';
 export interface LigneMainOeuvre {
   id: string;
   designation: string;
+  unite: string;
   mode: 'horaire' | 'fixe';
-  prixHoraire: number;
-  heures: number;
-  prixFixe: number;
+  prixHoraire: number | string;
+  heures: number | string;
+  prixFixe: number | string;
 }
 
 export default function LigneDraggable({
@@ -33,10 +34,11 @@ export default function LigneDraggable({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const formatNombre = (val: number) =>
-    Number.isNaN(val)
-      ? ''
-      : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 6 }).format(val);
+  const afficherValeur = (val: number | string) => {
+    if (val === '' || val === undefined || val === null) return '';
+    if (typeof val === 'number') return val.toString().replace('.', ',');
+    return val.toString().replace('.', ',');
+  };
 
   return (
     <tr ref={setNodeRef} style={style}>
@@ -52,6 +54,17 @@ export default function LigneDraggable({
           placeholder="Désignation"
         />
       </td>
+
+      <td className="px-3 py-2">
+        <input
+          type="text"
+          className="w-full bg-transparent text-sm"
+          value={ligne.unite || ''}
+          onChange={e => modifierLigne(ligne.id, 'unite', e.target.value)}
+          placeholder="ex: h, m², jour..."
+        />
+      </td>
+
       <td className="px-3 py-2">
         <div className="inline-flex rounded-md border border-gray-300 overflow-hidden text-sm w-full">
           <button
@@ -78,42 +91,46 @@ export default function LigneDraggable({
           </button>
         </div>
       </td>
+
       <td className="px-3 py-2">
         <input
           type="text"
+          inputMode="decimal"
           className={`w-full bg-transparent text-sm ${
             ligne.mode === 'fixe' ? 'text-gray-400' : ''
           }`}
-          value={formatNombre(ligne.prixHoraire)}
+          value={afficherValeur(ligne.prixHoraire)}
           onChange={e => modifierLigne(ligne.id, 'prixHoraire', e.target.value)}
-          disabled={ligne.mode === 'fixe'}
           placeholder="0"
         />
       </td>
+
       <td className="px-3 py-2">
         <input
           type="text"
+          inputMode="decimal"
           className={`w-full bg-transparent text-sm ${
             ligne.mode === 'fixe' ? 'text-gray-400' : ''
           }`}
-          value={formatNombre(ligne.heures)}
+          value={afficherValeur(ligne.heures)}
           onChange={e => modifierLigne(ligne.id, 'heures', e.target.value)}
-          disabled={ligne.mode === 'fixe'}
           placeholder="0"
         />
       </td>
+
       <td className="px-3 py-2">
         <input
           type="text"
+          inputMode="decimal"
           className={`w-full bg-transparent text-sm ${
             ligne.mode === 'horaire' ? 'text-gray-400' : ''
           }`}
-          value={formatNombre(ligne.prixFixe)}
+          value={afficherValeur(ligne.prixFixe)}
           onChange={e => modifierLigne(ligne.id, 'prixFixe', e.target.value)}
-          disabled={ligne.mode === 'horaire'}
           placeholder="0"
         />
       </td>
+
       <td className="px-3 py-2 text-center">
         <Button onClick={() => supprimerLigne(ligne.id)} variant="danger" size="sm">
           Supprimer

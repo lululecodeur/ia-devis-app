@@ -14,6 +14,7 @@ import BlocCategorie from '@/components/BlocCategorie';
 import ModalNouvelleCategorie from '@/components/ModalNouvelleCategorie';
 import Button from '@/components/ui/bouton';
 import PreviewDevis from '@/components/PreviewDevis'; // ou le chemin correct vers ton fichier
+import Aide from '@/components/Aide';
 
 // Types
 
@@ -36,6 +37,7 @@ interface Tarif {
 interface LigneMainOeuvre {
   id: string;
   designation: string;
+  unite: string;
   mode: 'horaire' | 'fixe';
   prixHoraire: number;
   heures: number;
@@ -46,6 +48,7 @@ interface LigneMainOeuvre {
 interface LignePiece {
   id: string;
   designation: string;
+  unite: string;
   prixAchat: number;
   margePourcent: number;
   quantite: number;
@@ -269,8 +272,18 @@ export default function Home() {
   const [afficherPieces, setAfficherPieces] = useState(true);
   const lignesPourPDF: { type: 'header' | 'ligne'; contenu?: Ligne }[] = [];
   const [showModal, setShowModal] = useState(false);
+  const parseNombreFr = (val: string | number | undefined | null): number =>
+    typeof val === 'number' ? val : parseFloat((val || '').toString().replace(',', '.')) || 0;
 
   const [numeroDevis, setNumeroDevis] = useState('');
+  const [exportEnCours, setExportEnCours] = useState(false);
+
+  const [modeModal, setModeModal] = useState<'creation' | 'edition'>('creation');
+  const [categorieEdition, setCategorieEdition] = useState<null | {
+    nom: string;
+    colonnes: ColonneCategorie[];
+  }>(null);
+
   const [colonnesCustom, setColonnesCustom] = useState<
     { nom: string; type: 'texte' | 'quantite' | 'prix' | 'prixAvecMarge' }[]
   >([]);
@@ -282,6 +295,66 @@ export default function Home() {
   const [categoriesSauvegardees, setCategoriesSauvegardees] = useState<CategorieSauvegardee[]>([]);
 
   const [afficherPDFMobile, setAfficherPDFMobile] = useState(false);
+
+  const [indexCategorieEdition, setIndexCategorieEdition] = useState<number | null>(null);
+
+  const aideMentionsEtFisc = `⚖️ Mentions légales
+– Ce champ vous permet d’ajouter des conditions ou informations contractuelles visibles en bas du devis PDF.
+– Exemples : « Devis valable 15 jours », « Paiement sous 30 jours », « TVA non applicable, art. 293 B du CGI », etc.
+– Ce champ accepte les sauts de ligne et sera rendu tel quel dans le PDF.
+
+📊 TVA (%)
+– Taux de taxe sur la valeur ajoutée appliqué au montant total HT (hors taxes).
+– Le taux saisi sera utilisé pour calculer automatiquement le montant de la TVA et le total TTC.
+– Exemples : 20 pour 20%, 0 pour exonération.
+
+💸 Remise (%)
+– Réduction appliquée sur le **total HT**, avant le calcul de la TVA.
+– Le taux de remise s’applique à l’ensemble des lignes visibles dans le devis.
+
+💰 Acompte (%)
+– Pourcentage du montant **TTC** que vous souhaitez demander en avance à votre client.
+– Le montant de l’acompte sera affiché dans le tableau des totaux.
+
+ℹ️ Tous les calculs sont mis à jour automatiquement dès que vous modifiez un champ.
+`;
+
+  const aideCategorie = `📦 Nom de la catégorie
+Vous pouvez librement nommer cette section selon son contenu : Location, Transport, Nettoyage, Repas, etc.
+Le nom est automatiquement sauvegardé et sera proposé par défaut lors de la création de futurs devis.
+
+🧱 Structure du tableau
+– Vous pouvez ajouter autant de colonnes que nécessaire.
+– Chaque colonne doit être associée à un type : Texte, Quantité, Prix ou Prix avec marge.
+– Vous pouvez modifier la structure à tout moment via le bouton « ✏️ Modifier la structure ».
+
+🛠️ Remplissage des lignes
+– Chaque ligne représente une entrée dans la catégorie (ex : un poste, un produit, une tâche...).
+– Cliquez sur « ➕ Ajouter une ligne » pour créer une nouvelle entrée.
+– Les champs numériques (quantité, prix...) acceptent les virgules, et les totaux sont recalculés automatiquement.
+
+💰 Calcul automatique des totaux
+– Si vous avez défini une colonne de type Quantité et au moins une colonne de type Prix ou Prix avec marge, alors un Total HT est automatiquement affiché pour chaque ligne.
+– Pour les colonnes de type « Prix avec marge », le prix unitaire est calculé comme suit :
+→ Prix = Prix d’achat × (1 + Marge en % / 100)
+
+💾 Sauvegarde des catégories
+– Le bouton « 💾 Enregistrer cette prestation » permet de sauvegarder **l’ensemble de la catégorie** (colonnes + toutes les lignes).
+– Contrairement aux prestations principales (Main d’œuvre et Pièces), vous **ne pouvez pas enregistrer une seule ligne isolée** d'une catégorie dynamique.
+– En revanche, vous pouvez :
+  • Enregistrer une catégorie avec plusieurs prestations,
+  • L’ajouter à un devis via le bouton « Ajouter au devis »,
+  • Supprimer les lignes non désirées dans ce devis uniquement via le bouton 🗑️ (cela ne modifie pas la version enregistrée).
+– Les catégories sauvegardées sont liées au secteur actif, persistent après rechargement, et restent disponibles pour les futurs devis.
+
+📂 Réutilisation et suppression
+– Pour ajouter une catégorie enregistrée à un devis, cliquez sur « Ajouter au devis » dans l’encadré *📂 Catégories enregistrées*.
+– Pour supprimer définitivement une catégorie enregistrée, utilisez le bouton « Supprimer » dans ce même encadré.
+
+📥 Inclusion dans le PDF
+– Utilisez le switch « Afficher dans le PDF » pour décider si cette catégorie doit apparaître dans le rendu PDF final.
+– Si désactivée, elle reste visible dans l’interface mais ne sera pas affichée dans le devis généré.
+`;
 
   if (lignesMainOeuvre.length > 0) {
     lignesPourPDF.push({
@@ -384,65 +457,97 @@ export default function Home() {
   const [canSaveEmetteur, setCanSaveEmetteur] = useState(false);
   const [clientTempLoaded, setClientTempLoaded] = useState(false);
   const [clientId, setClientId] = useState(''); // <- pour garder le vrai ID du client
-  const lignesFinales: Ligne[] = [
-    ...(afficherMainOeuvre
-      ? lignesMainOeuvre.map(l => ({
-          designation: `[${nomMainOeuvre}] ${l.designation}`,
-          unite: 'U',
-          quantite: 1,
-          prix: l.mode === 'fixe' ? l.prixFixe : l.prixHoraire * l.heures,
-        }))
-      : []),
 
-    ...(afficherPieces
-      ? lignesPieces.map(l => ({
-          designation: `[${nomPieces}] ${l.designation}`,
-          unite: 'U',
-          quantite: l.quantite,
-          prix: l.mode === 'manuel' ? l.prixManuel || 0 : l.prixAchat * (1 + l.margePourcent / 100),
-        }))
-      : []),
+  const buildLignesFinales = () => {
+    const lignesMO = lignesMainOeuvre.map(l => {
+      const prix =
+        l.mode === 'fixe'
+          ? parseNombreFr(l.prixFixe)
+          : parseNombreFr(l.prixHoraire) * parseNombreFr(l.heures);
+      return {
+        designation: l.designation,
+        quantite: 1,
+        prix,
+      };
+    });
 
-    ...categoriesDynamiques
-      .filter(c => c.afficher)
-      .flatMap(cat =>
-        cat.lignes.map(ligne => {
-          let prix = 0;
-          for (const col of cat.colonnes) {
-            if (col.type === 'prix') {
-              const colonneQuantite = cat.colonnes.find(c => c.type === 'quantite');
-              const quantite = colonneQuantite ? Number(ligne[colonneQuantite.nom]) || 0 : 1;
-              const pu = Number(ligne[col.nom]) || 0;
-              prix += pu * quantite;
-            } else if (col.type === 'prixAvecMarge') {
-              const colonneQuantite = cat.colonnes.find(c => c.type === 'quantite');
-              const quantite = colonneQuantite ? Number(ligne[colonneQuantite.nom]) || 0 : 1;
-              const achat = Number(ligne[col.nom + '_achat']) || 0;
-              const marge = Number(ligne[col.nom + '_marge']) || 0;
-              const pu = achat * (1 + marge / 100);
-              prix += pu * quantite;
-            }
-          }
-          return {
-            designation: `[${cat.nom}] ${ligne.designation ?? ''}`,
-            unite: ligne.unite ?? 'U',
-            quantite: 1,
-            prix,
-          };
-        })
-      ),
-  ];
+    const lignesPiecesMapped: any[] = lignesPieces.map(l => {
+      const prix =
+        l.mode === 'manuel'
+          ? parseNombreFr(l.prixManuel)
+          : parseNombreFr(l.prixAchat) * (1 + parseNombreFr(l.margePourcent) / 100);
+      return {
+        designation: l.designation,
+        quantite: parseNombreFr(l.quantite),
+        prix,
+      };
+    });
 
-  const totalHTBrut = lignesFinales.reduce(
-    (somme, ligne) => somme + ligne.quantite * ligne.prix,
-    0
-  );
+    const lignesDynamiques = categoriesDynamiques.flatMap(cat =>
+      cat.lignes.map(l => {
+        const colonnes = cat.colonnes.filter(c => c.type === 'prix' || c.type === 'prixAvecMarge');
+        const prix = colonnes.reduce((s, col) => s + parseNombreFr(l[col.nom]), 0);
+        const quantite = parseNombreFr(l['quantite']) || 1;
+        return {
+          designation: cat.nom,
+          quantite,
+          prix,
+        };
+      })
+    );
 
-  const remise = totalHTBrut * (remisePourcent / 100);
+    return [...lignesMO, ...lignesPiecesMapped, ...lignesDynamiques];
+  };
+
+  // On conserve les lignes fusionnées si besoin ailleurs
+  const lignesFinales = buildLignesFinales();
+
+  // Calcul complet du total HT brut
+  let totalHTBrut = 0;
+
+  // Main d’œuvre
+  lignesMainOeuvre.forEach(l => {
+    const prix = l.mode === 'fixe' ? l.prixFixe : l.prixHoraire * l.heures;
+    totalHTBrut += prix;
+  });
+
+  // Pièces
+  lignesPieces.forEach(l => {
+    const prix =
+      l.mode === 'manuel' ? l.prixManuel ?? 0 : l.prixAchat * (1 + l.margePourcent / 100);
+    totalHTBrut += prix * l.quantite;
+  });
+
+  // Catégories dynamiques
+  categoriesDynamiques.forEach(cat => {
+    if (!cat.afficher) return;
+
+    cat.lignes.forEach(ligne => {
+      let pu = 0;
+      let quantite = 1;
+
+      for (const col of cat.colonnes) {
+        if (col.type === 'prix') {
+          pu += parseFloat(ligne[col.nom]) || 0;
+        } else if (col.type === 'prixAvecMarge') {
+          const achat = parseFloat(ligne[col.nom + '_achat']) || 0;
+          const marge = parseFloat(ligne[col.nom + '_marge']) || 0;
+          pu += achat * (1 + marge / 100);
+        } else if (col.type === 'quantite') {
+          quantite = parseFloat(ligne[col.nom]) || 1;
+        }
+      }
+
+      totalHTBrut += pu * quantite;
+    });
+  });
+
+  // Calculs restants
+  const remise = totalHTBrut * (parseNombreFr(remisePourcent) / 100);
   const totalHT = totalHTBrut - remise;
-  const tva = totalHT * (tvaTaux / 100);
+  const tva = totalHT * (parseNombreFr(tvaTaux) / 100);
   const totalTTC = totalHT + tva;
-  const acompte = totalTTC * (acomptePourcent / 100);
+  const acompte = totalTTC * (parseNombreFr(acomptePourcent) / 100);
 
   // Logo upload
   const handleLogoUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -742,7 +847,7 @@ export default function Home() {
                             localStorage.setItem('secteurActif', propre); // ✅ fix
                           }
                         }}
-                        className="bg-blue-600 text-white px-4 py-2 rounded mb-4 hover:bg-blue-700 w-full"
+                        className="bg-blue-600 text-white px-4 py-2 rounded mb-4 hover:bg-blue-700 w-full mt-4"
                       >
                         ➕ Ajouter le métier
                       </button>
@@ -1260,13 +1365,6 @@ export default function Home() {
                     <div className="flex flex-col gap-4 sm:gap-6">
                       {/* 🟩 Bloc classique : main d'œuvre + pièces */}
                       <Card title="📁 Prestations principales">
-                        <p className="text-sm text-gray-500 mb-2">
-                          👷 Vous pouvez adapter le nom de cette catégorie selon votre activité : «
-                          main d’œuvre », « prestation », « services », etc en appuyant bien sur
-                          Entrée à la fin de la saisie. Cette modification sera enregistrée pour vos
-                          prochains devis. Si vous n'en avez pas besoin, décocher "Afficher dans le
-                          pdf".
-                        </p>
                         <BlocMainOeuvre
                           lignes={lignesMainOeuvre}
                           setLignes={setLignesMainOeuvre}
@@ -1279,13 +1377,7 @@ export default function Home() {
 
                         {/* Trait de séparation entre main d'œuvre et pièces */}
                         <div className="w-full h-[1px] bg-gray-300 my-6" />
-                        <p className="text-sm text-gray-500 mb-2">
-                          🧰 Vous pouvez personnaliser le nom de chaque catégorie selon votre métier
-                          : « pièces », « matériaux », « fournitures »… en appuyant bien sur Entrée
-                          à la fin de la saisie. Cette modification sera enregistrée pour vos
-                          prochains devis. Si vous n'en avez pas besoin, décocher "Afficher dans le
-                          pdf".
-                        </p>
+
                         <BlocPieces
                           lignes={lignesPieces}
                           setLignes={setLignesPieces}
@@ -1300,9 +1392,14 @@ export default function Home() {
                       {/* 🟦 Bloc séparé : catégories dynamiques */}
                       <Card title="📦 Prestations personnalisées et enregistrées">
                         {/* 🔁 Catégories dynamiques en cours */}
+                        {/* Bouton Aide accessible même sans catégorie */}
+                        <div className="flex justify-end">
+                          <Aide titre="Aide catégories dynamiques" contenu={aideCategorie} />
+                        </div>
                         {categoriesDynamiques.map((cat, index) => (
                           <div key={index} className="mb-4 sm:mb-6">
                             <BlocCategorie
+                              key={index}
                               categorie={cat}
                               onUpdate={updatedCat => {
                                 const copie = [...categoriesDynamiques];
@@ -1313,6 +1410,12 @@ export default function Home() {
                                 const copie = [...categoriesDynamiques];
                                 copie.splice(index, 1);
                                 setCategoriesDynamiques(copie);
+                              }}
+                              onDemanderEdition={cat => {
+                                setIndexCategorieEdition(index); // ✅ ajoute bien cette ligne
+                                setModeModal('edition');
+                                setCategorieEdition(cat); // cat = { nom, colonnes }
+                                setShowModal(true);
                               }}
                             />
 
@@ -1371,16 +1474,38 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
 
                         {/* ➕ Ajout d'une nouvelle catégorie */}
                         <div className="mt-10">
-                          <Button onClick={() => setShowModal(true)} variant="primary" size="md">
-                            Ajouter une catégorie
+                          <Button
+                            onClick={() => {
+                              setModeModal('creation'); // ✅ on passe en mode création
+                              setCategorieEdition(null); // ✅ pas de catégorie existante à éditer
+                              setShowModal(true); // ✅ ouvre le modal
+                            }}
+                            variant="primary"
+                            size="md"
+                          >
+                            Créer une catégorie
                           </Button>
 
                           {showModal && (
                             <ModalNouvelleCategorie
+                              mode={modeModal}
+                              initialCategorie={categorieEdition || undefined}
                               onClose={() => setShowModal(false)}
-                              onCreate={cat =>
-                                setCategoriesDynamiques([...categoriesDynamiques, cat])
-                              }
+                              onCreate={cat => {
+                                if (modeModal === 'creation') {
+                                  setCategoriesDynamiques([...categoriesDynamiques, cat]);
+                                } else if (indexCategorieEdition !== null) {
+                                  const copie = [...categoriesDynamiques];
+                                  copie[indexCategorieEdition] = {
+                                    ...copie[indexCategorieEdition],
+                                    colonnes: cat.colonnes,
+                                    nom: cat.nom, // ✅ mise à jour du nom
+                                  };
+                                  setCategoriesDynamiques(copie);
+                                }
+                                setShowModal(false);
+                                setIndexCategorieEdition(null);
+                              }}
                             />
                           )}
                         </div>
@@ -1424,7 +1549,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                                         ])
                                       }
                                     >
-                                      Ajouter
+                                      Ajouter au devis
                                     </Button>
                                     <Button
                                       variant="danger"
@@ -1612,6 +1737,8 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                   )}
                   <Card title="⚖️ Mentions légales & paramètres fiscaux">
                     <div className="flex flex-col gap-4">
+                      <Aide titre="Aide" contenu={aideMentionsEtFisc} />
+
                       <label className="block font-medium mb-1">Mentions légales</label>
                       <textarea
                         className="w-full p-3 border border-gray-300 rounded text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1719,6 +1846,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                     <div className="sticky bottom-4 left-4 z-50">
                       <Button
                         onClick={async () => {
+                          setExportEnCours(true);
                           try {
                             // ✅ Vérifs de base
                             if (!recepteur.nom.trim() || !recepteur.email.trim()) {
@@ -1899,12 +2027,15 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                           } catch (e) {
                             alert('❌ Erreur complète lors de l’export.');
                             console.error(e);
+                          } finally {
+                            setExportEnCours(false);
                           }
                         }}
+                        disabled={exportEnCours}
                         variant="success"
                         size="md"
                       >
-                        Exporter le devis
+                        {exportEnCours ? '📄 Génération en cours…' : 'Exporter le devis'}
                       </Button>
                     </div>
                   )}
@@ -1917,6 +2048,7 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                     <div className="flex flex-col gap-4">
                       <Button
                         onClick={async () => {
+                          setExportEnCours(true);
                           try {
                             // ✅ Vérifs de base
                             if (!recepteur.nom.trim() || !recepteur.email.trim()) {
@@ -2094,12 +2226,15 @@ Voulez-vous la remplacer avec les colonnes et les prestations actuelles (cela é
                           } catch (e) {
                             alert('❌ Erreur complète lors de l’export.');
                             console.error(e);
+                          } finally {
+                            setExportEnCours(false);
                           }
                         }}
+                        disabled={exportEnCours}
                         variant="success"
                         size="lg"
                       >
-                        Exporter le devis
+                        {exportEnCours ? '📄 Génération en cours…' : 'Exporter le devis'}
                       </Button>
                       <div className="flex justify-center mt-4">
                         <Link href="/historique">

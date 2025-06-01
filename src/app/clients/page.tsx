@@ -54,7 +54,17 @@ export default function ClientsPage() {
     const stored = localStorage.getItem('clients');
     if (stored) {
       const parsed = JSON.parse(stored);
-      setClients(parsed.reverse()); // 🔁 inverse la liste
+
+      // Ajoute un ID si manquant
+      const withIds = parsed.map((client: Client) => ({
+        ...client,
+        client_id: client.client_id || crypto.randomUUID(),
+      }));
+
+      // Mets à jour le localStorage avec les ID manquants
+      localStorage.setItem('clients', JSON.stringify(withIds));
+
+      setClients(withIds.reverse()); // 🔁 inverse la liste
     }
   }, []);
 
@@ -77,9 +87,10 @@ export default function ClientsPage() {
       if (historique) {
         try {
           const devis: Devis[] = JSON.parse(historique);
-          const updatedDevis = devis.map(d =>
+          const updatedDevis = devis.map((d: Devis) =>
             d.client_id === clientId ? { ...d, recepteur: client } : d
           );
+
           localStorage.setItem('devisHistorique', JSON.stringify(updatedDevis));
         } catch (e) {
           console.warn('❌ Erreur mise à jour devis liés :', e);
@@ -135,7 +146,7 @@ export default function ClientsPage() {
       ) : (
         clients.map((client, index) => (
           <div
-            key={index}
+            key={client.client_id}
             className="bg-white border rounded-xl p-6 mb-4 sm:mb-6 shadow space-y-2 text-black"
           >
             <input
@@ -200,7 +211,7 @@ export default function ClientsPage() {
                 💾 Sauvegarder
               </Button>
               <Button variant="success" size="md" onClick={() => reutiliserClient(clients[index])}>
-                ✅ Réutiliser
+                ✅ Réutiliser les infos clients
               </Button>
               <Button variant="danger" size="md" onClick={() => supprimerClient(index)}>
                 🗑️ Supprimer
@@ -222,7 +233,26 @@ export default function ClientsPage() {
                       <button
                         className="ml-2 text-blue-600 hover:underline text-xs"
                         onClick={() => {
-                          localStorage.setItem('devisEnCours', JSON.stringify(devis));
+                          const devisClean = {
+                            ...devis,
+                            lignesMainOeuvre: (devis.lignesMainOeuvre || []).map(l => ({
+                              ...l,
+                              id: crypto.randomUUID(),
+                            })),
+                            lignesPieces: (devis.lignesPieces || []).map(l => ({
+                              ...l,
+                              id: crypto.randomUUID(),
+                            })),
+                            categoriesDynamiques: (devis.categoriesDynamiques || []).map(cat => ({
+                              ...cat,
+                              lignes: (cat.lignes || []).map((l: any) => ({
+                                ...l,
+                                _id: crypto.randomUUID(),
+                              })),
+                            })),
+                          };
+
+                          localStorage.setItem('devisEnCours', JSON.stringify(devisClean));
                           if (devis.client_id) {
                             localStorage.setItem('client_id_temp', devis.client_id);
                           }

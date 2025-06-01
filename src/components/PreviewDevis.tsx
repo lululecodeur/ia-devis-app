@@ -2,6 +2,7 @@ import React from 'react';
 
 type LigneMainOeuvre = {
   designation: string;
+  unite: string;
   mode: 'fixe' | 'horaire';
   prixFixe: number;
   prixHoraire: number;
@@ -10,6 +11,7 @@ type LigneMainOeuvre = {
 
 type LignePiece = {
   designation: string;
+  unite: string;
   mode: 'manuel' | 'calculé';
   prixManuel?: number;
   prixAchat: number;
@@ -107,6 +109,9 @@ export default function PreviewDevis(props: PreviewDevisProps) {
   } = props;
 
   const COL_WIDTHS = ['40%', '15%', '15%', '15%', '15%'];
+
+  const parseNombreFr = (val: string | number | undefined | null): number =>
+    typeof val === 'number' ? val : parseFloat(val?.toString().replace(',', '.') || '0') || 0;
 
   const getWidth = (idx: number, total: number) => {
     if (total === 0) return '100%';
@@ -300,8 +305,15 @@ export default function PreviewDevis(props: PreviewDevisProps) {
               </tr>
 
               {lignesMainOeuvre.map((ligne, index) => {
-                const prix =
-                  ligne.mode === 'fixe' ? ligne.prixFixe : ligne.prixHoraire * ligne.heures;
+                const toFloat = (val: string | number): number => {
+                  if (typeof val === 'number') return val;
+                  return parseFloat(val.replace(',', '.')) || 0;
+                };
+
+                const prixUnitaire =
+                  ligne.mode === 'fixe' ? toFloat(ligne.prixFixe) : toFloat(ligne.prixHoraire);
+                const quantite = ligne.mode === 'fixe' ? 1 : toFloat(ligne.heures);
+                const total = prixUnitaire * quantite;
 
                 return (
                   <tr key={`main-${index}`}>
@@ -324,7 +336,7 @@ export default function PreviewDevis(props: PreviewDevisProps) {
                         verticalAlign: 'middle',
                       }}
                     >
-                      U
+                      {ligne.unite || '-'}
                     </td>
                     <td
                       style={{
@@ -334,7 +346,7 @@ export default function PreviewDevis(props: PreviewDevisProps) {
                         verticalAlign: 'middle',
                       }}
                     >
-                      1
+                      {quantite}
                     </td>
                     <td
                       style={{
@@ -344,7 +356,7 @@ export default function PreviewDevis(props: PreviewDevisProps) {
                         verticalAlign: 'middle',
                       }}
                     >
-                      {prix.toFixed(2)}
+                      {prixUnitaire.toFixed(2)}
                     </td>
                     <td
                       style={{
@@ -354,7 +366,7 @@ export default function PreviewDevis(props: PreviewDevisProps) {
                         verticalAlign: 'middle',
                       }}
                     >
-                      {prix.toFixed(2)}
+                      {total.toFixed(2)}
                     </td>
                   </tr>
                 );
@@ -439,8 +451,11 @@ export default function PreviewDevis(props: PreviewDevisProps) {
               {lignesPieces.map((ligne, index) => {
                 const prix =
                   ligne.mode === 'manuel'
-                    ? ligne.prixManuel || 0
-                    : ligne.prixAchat * (1 + ligne.margePourcent / 100);
+                    ? parseNombreFr(ligne.prixManuel)
+                    : parseNombreFr(ligne.prixAchat) *
+                      (1 + parseNombreFr(ligne.margePourcent) / 100);
+
+                const quantite = parseNombreFr(ligne.quantite) || 1;
 
                 return (
                   <tr key={`piece-${index}`}>
@@ -463,7 +478,7 @@ export default function PreviewDevis(props: PreviewDevisProps) {
                         verticalAlign: 'middle',
                       }}
                     >
-                      U
+                      {ligne.unite || '-'}
                     </td>
                     <td
                       style={{
@@ -473,7 +488,7 @@ export default function PreviewDevis(props: PreviewDevisProps) {
                         verticalAlign: 'middle',
                       }}
                     >
-                      {ligne.quantite}
+                      {quantite}
                     </td>
                     <td
                       style={{
@@ -493,7 +508,7 @@ export default function PreviewDevis(props: PreviewDevisProps) {
                         verticalAlign: 'middle',
                       }}
                     >
-                      {(prix * ligne.quantite).toFixed(2)}
+                      {(quantite * prix).toFixed(2)}
                     </td>
                   </tr>
                 );

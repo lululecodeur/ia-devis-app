@@ -10,6 +10,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
+import Aide from '@/components/Aide';
 
 type LigneCustom = { [cle: string]: any };
 
@@ -107,15 +108,15 @@ function LigneSortable({
               onWheel={e => e.currentTarget.blur()}
               value={col.type === 'texte' ? ligne[cle] ?? '' : afficherNettoye(ligne[cle])}
               onChange={e => onUpdate(index, cle, e.target.value)}
-              className="w-full bg-transparent text-sm border border-gray-200 rounded px-2"
+              className="w-full min-w-[80px] text-[16px] bg-transparent border border-gray-200 rounded px-2"
             />
           </td>
         );
       })}
       <td className="px-3 py-2 text-center">
-        <button onClick={onDelete} className="text-red-500 hover:text-red-700">
+        <Button onClick={onDelete} variant="outline" size="xs">
           🗑️
-        </button>
+        </Button>
       </td>
     </tr>
   );
@@ -126,6 +127,7 @@ export default function BlocCategorie({
   onUpdate,
   onDelete,
   onSaveCategorie,
+  onDemanderEdition, // ✅ nouvelle prop
 }: {
   categorie: CategorieDynamique;
   onUpdate: (updated: CategorieDynamique) => void;
@@ -136,6 +138,7 @@ export default function BlocCategorie({
     lignes?: LigneCustom[];
     emoji?: string;
   }) => void;
+  onDemanderEdition?: (cat: { nom: string; colonnes: ColonneCategorie[] }) => void;
 }) {
   const [replie, setReplie] = useState(!categorie.afficher);
   const sensors = useSensors(useSensor(PointerSensor));
@@ -201,77 +204,131 @@ export default function BlocCategorie({
   };
 
   // ... (replié UI comme dans ta version précédente)
-
   return (
-    <div className="flex flex-col gap-1">
-      {/* ... titre, inputs nom, bouton réduire ... */}
-
-      {/* tableau */}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-separate border-spacing-y-2 mt-4">
-            <thead>
-              <tr className="text-left text-xs uppercase text-gray-600 tracking-wider">
-                <th className="w-6" />
-                {categorie.colonnes.map((col, idx) => (
-                  <th key={idx} className="px-3 py-2 bg-gray-100">
-                    {col.nom}
-                  </th>
-                ))}
-                <th className="px-3 py-2 bg-gray-100 text-center">🗑️</th>
-              </tr>
-            </thead>
-
-            <SortableContext
-              items={categorie.lignes.map((l, i) => l._id || i.toString())}
-              strategy={verticalListSortingStrategy}
-            >
-              <tbody>
-                {categorie.lignes.map((ligne, i) => (
-                  <LigneSortable
-                    key={ligne._id || i}
-                    ligne={ligne}
-                    index={i}
-                    colonnes={categorie.colonnes}
-                    onUpdate={modifierValeur}
-                    onDelete={() => supprimerLigne(i)}
-                  />
-                ))}
-              </tbody>
-            </SortableContext>
-          </table>
+    <div className="flex flex-col gap-4">
+      {replie ? (
+        <div className="border border-gray-300 p-4 rounded-lg bg-gray-50 shadow-sm mb-4">
+          <div className="flex justify-between items-center">
+            <span className="font-semibold">
+              {categorie.emoji ? `${categorie.emoji} ` : ''}
+              {categorie.nom || 'Catégorie personnalisée'}
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setReplie(false)}
+                className="text-blue-600 text-sm hover:underline"
+              >
+                Afficher/Modifier
+              </button>
+              <button
+                onClick={() => onUpdate({ ...categorie, afficher: !categorie.afficher })}
+                className="text-gray-600 text-sm hover:underline"
+              >
+                {categorie.afficher ? '📤 Retirer du PDF' : '📥 Afficher dans PDF'}
+              </button>
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 mt-1">
+            {categorie.lignes.length} ligne{categorie.lignes.length > 1 ? 's' : ''} —{' '}
+            {categorie.afficher ? 'affiché' : 'non affiché'} dans PDF
+          </p>
         </div>
-      </DndContext>
+      ) : (
+        <>
+          <div className="flex justify-between items-center mt-2">
+            <h2 className="text-md font-semibold">
+              {categorie.emoji ? `${categorie.emoji} ` : ''}
+              {categorie.nom}
+            </h2>
 
-      {/* ... bouton ajouter ligne, checkbox afficher dans PDF, bouton supprimer ... */}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={() =>
+                  onDemanderEdition?.({
+                    nom: categorie.nom,
+                    colonnes: categorie.colonnes,
+                  })
+                }
+              >
+                ✏️ Modifier la structure
+              </Button>
+              <Button onClick={() => setReplie(true)} variant="outline" size="xs">
+                🔽 Réduire
+              </Button>
+            </div>
+          </div>
 
-      <Button variant="ghost" size="sm" onClick={ajouterLigne} className="w-75">
-        ➕ Ajouter une ligne
-      </Button>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-separate border-spacing-y-2 mt-4">
+                <thead>
+                  <tr className="text-left text-xs uppercase text-gray-600 tracking-wider">
+                    <th className="w-6" />
+                    {categorie.colonnes.map((col, idx) => (
+                      <th key={idx} className="px-3 py-2 bg-gray-100">
+                        {col.nom}
+                      </th>
+                    ))}
+                    <th className="px-3 py-2 bg-gray-100 text-center">🗑️</th>
+                  </tr>
+                </thead>
 
-      <div className="flex items-center justify-between gap-4 mt-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700">Afficher dans le PDF</span>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={categorie.afficher}
-              onChange={e => {
-                const val = e.target.checked;
-                onUpdate({ ...categorie, afficher: val });
-                if (!val) setReplie(true);
-              }}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition duration-300"></div>
-            <div className="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-full shadow"></div>
-          </label>
-        </div>
+                <SortableContext
+                  items={categorie.lignes.map((l, i) => l._id || i.toString())}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <tbody>
+                    {categorie.lignes.map((ligne, i) => (
+                      <LigneSortable
+                        key={ligne._id || i}
+                        ligne={ligne}
+                        index={i}
+                        colonnes={categorie.colonnes}
+                        onUpdate={modifierValeur}
+                        onDelete={() => supprimerLigne(i)}
+                      />
+                    ))}
+                  </tbody>
+                </SortableContext>
+              </table>
+            </div>
+          </DndContext>
 
-        <Button variant="danger" size="sm" onClick={onDelete}>
-          Supprimer du devis
-        </Button>
-      </div>
+          <Button variant="ghost" size="sm" onClick={ajouterLigne} className="w-75">
+            ➕ Ajouter une ligne
+          </Button>
+
+          <div className="flex items-center justify-between gap-4 mt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">Afficher dans le PDF</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={categorie.afficher}
+                  onChange={e => {
+                    const val = e.target.checked;
+                    onUpdate({ ...categorie, afficher: val });
+                    if (!val) setReplie(true);
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition duration-300"></div>
+                <div className="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-full shadow"></div>
+              </label>
+            </div>
+
+            <Button variant="danger" size="sm" onClick={onDelete}>
+              Supprimer du devis
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

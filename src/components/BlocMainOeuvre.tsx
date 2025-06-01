@@ -10,10 +10,12 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
 import LigneDraggable from '@/components/LigneDraggable'; // adapte le chemin si besoin
+import Aide from '@/components/Aide';
 
 interface LigneMainOeuvre {
   id: string;
   designation: string;
+  unite: string;
   mode: 'horaire' | 'fixe';
   prixHoraire: number;
   heures: number;
@@ -57,6 +59,7 @@ export default function BlocMainOeuvre({
     const nouvelleLigne: LigneMainOeuvre = {
       id: crypto.randomUUID(), // ✅ identifiant unique
       designation: '',
+      unite: 'U',
       mode: 'horaire',
       prixHoraire: 0,
       heures: 1,
@@ -65,18 +68,25 @@ export default function BlocMainOeuvre({
     setLignes([...lignes, nouvelleLigne]);
   };
   const modifierLigne = (id: string, champ: keyof LigneMainOeuvre, valeur: string | number) => {
-    const copie = lignes.map(ligne => {
-      if (ligne.id === id) {
-        return {
-          ...ligne,
-          [champ]: ['prixHoraire', 'heures', 'prixFixe'].includes(champ)
-            ? parseFloat(String(valeur).replace(',', '.')) || 0
-            : valeur,
-        };
+    const nouvellesLignes = lignes.map(ligne => {
+      if (ligne.id !== id) return ligne;
+
+      let nouvelleValeur: string | number = valeur;
+
+      // ne parse PAS tout de suite — laisse la valeur telle quelle
+      if (typeof valeur === 'string') {
+        if (['prixHoraire', 'prixFixe', 'heures'].includes(champ)) {
+          nouvelleValeur = valeur; // temporairement string avec virgule
+        }
       }
-      return ligne;
+
+      return {
+        ...ligne,
+        [champ]: nouvelleValeur,
+      };
     });
-    setLignes(copie);
+
+    setLignes(nouvellesLignes);
   };
 
   const supprimerLigne = (id: string) => {
@@ -128,6 +138,25 @@ export default function BlocMainOeuvre({
     }
   }, [secteurActif]);
 
+  const aideMainOeuvre = `👷 Nom de la catégorie
+Vous pouvez personnaliser le nom selon votre activité : Main d’œuvre, Services, Prestations, etc.
+Ce nom sera automatiquement retenu pour vos futurs devis.
+
+📉 Affichage
+Si vous ne souhaitez pas inclure cette section dans le PDF, réduisez-la puis cliquez sur « Retirer du PDF ».
+
+💰 Tarification
+Deux modes sont disponibles :
+• Prix fixe
+• Prix horaire (le calcul est automatique selon le nombre d’heures indiquées)
+
+🛠️ Prestations
+– Vous pouvez ajouter, modifier ou supprimer les lignes manuellement.
+– Pour réutiliser une prestation plus tard, cliquez sur « Enregistrer cette prestation ».
+– Pour l'ajouter à un futur devis, cliquez sur « Ajouter » dans l'encadré *Prestations enregistrées* (cet encadré n’apparaît que si au moins une prestation a été enregistrée).
+– Pour supprimer une prestation enregistrée, cliquez sur « Supprimer » dans cet encadré.
+`;
+
   // 💾 Sauvegarde automatique des lignes
   useEffect(() => {
     const secteur = secteurActif || 'global';
@@ -168,7 +197,7 @@ export default function BlocMainOeuvre({
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2">
               <span>👷‍♂️</span>
               <input
@@ -183,12 +212,15 @@ export default function BlocMainOeuvre({
                 className="text-lg font-semibold bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none transition"
               />
             </div>
-            <button
-              onClick={() => setReplie(true)}
-              className="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
-            >
-              🔽 Réduire
-            </button>
+
+            <div className="flex items-center gap-4">
+              <div className="text-sm">
+                <Aide titre="Aide" contenu={aideMainOeuvre} />
+              </div>
+              <Button onClick={() => setReplie(true)} variant="outline" size="xs">
+                🔽 Réduire
+              </Button>
+            </div>
           </div>
 
           <DndContext
@@ -208,6 +240,8 @@ export default function BlocMainOeuvre({
                   <tr className="text-left text-xs uppercase text-gray-600 tracking-wider">
                     <th className="px-3 py-2 bg-gray-100 rounded-l-lg"></th>
                     <th className="px-3 py-2 bg-gray-100">Désignation</th>
+                    <th className="px-3 py-2 bg-gray-100">Unité</th>
+
                     <th className="px-3 py-2 bg-gray-100">Mode</th>
                     <th className="px-3 py-2 bg-gray-100">Prix horaire (€)</th>
                     <th className="px-3 py-2 bg-gray-100">Heures</th>
@@ -221,15 +255,17 @@ export default function BlocMainOeuvre({
                   strategy={verticalListSortingStrategy}
                 >
                   <tbody>
-                    {lignes.map(ligne => (
-                      <LigneDraggable
-                        key={ligne.id}
-                        ligne={ligne}
-                        modifierLigne={modifierLigne}
-                        supprimerLigne={supprimerLigne}
-                        sauvegarderLigne={() => sauvegarderLigne(ligne)}
-                      />
-                    ))}
+                    {lignes
+                      .filter(l => l.id && typeof l.id === 'string')
+                      .map(ligne => (
+                        <LigneDraggable
+                          key={ligne.id}
+                          ligne={ligne}
+                          modifierLigne={modifierLigne}
+                          supprimerLigne={supprimerLigne}
+                          sauvegarderLigne={() => sauvegarderLigne(ligne)}
+                        />
+                      ))}
                   </tbody>
                 </SortableContext>
               </table>

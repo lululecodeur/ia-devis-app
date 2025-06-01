@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 interface Ligne {
+  id: string;
   designation: string;
   unite: string;
   quantite: number;
@@ -58,12 +59,29 @@ export default function HistoriquePage() {
   }, []);
 
   const reutiliserDevis = (devis: Devis) => {
-    // ⚠️ Patch : inclure les prestations si elles existent
+    const lignesMainOeuvre = (devis.lignesMainOeuvre || []).map(l => ({
+      ...l,
+      id: crypto.randomUUID(),
+    }));
+
+    const lignesPieces = (devis.lignesPieces || []).map(l => ({
+      ...l,
+      id: crypto.randomUUID(),
+    }));
+
+    const categoriesDynamiques = (devis.categoriesDynamiques || []).map(cat => ({
+      ...cat,
+      lignes: (cat.lignes || []).map((ligne: Record<string, any>) => ({
+        ...ligne,
+        _id: crypto.randomUUID(),
+      })),
+    }));
+
     const complet = {
       ...devis,
-      lignesMainOeuvre: devis.lignesMainOeuvre || [],
-      lignesPieces: devis.lignesPieces || [],
-      categoriesDynamiques: devis.categoriesDynamiques || [],
+      lignesMainOeuvre,
+      lignesPieces,
+      categoriesDynamiques,
     };
 
     localStorage.setItem('devisEnCours', JSON.stringify(complet));

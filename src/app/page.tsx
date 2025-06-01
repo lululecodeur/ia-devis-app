@@ -507,15 +507,20 @@ Le nom est automatiquement sauvegardé et sera proposé par défaut lors de la c
 
   // Main d’œuvre
   lignesMainOeuvre.forEach(l => {
-    const prix = l.mode === 'fixe' ? l.prixFixe : l.prixHoraire * l.heures;
+    const prix =
+      l.mode === 'fixe'
+        ? parseNombreFr(l.prixFixe)
+        : parseNombreFr(l.prixHoraire) * parseNombreFr(l.heures);
     totalHTBrut += prix;
   });
 
   // Pièces
   lignesPieces.forEach(l => {
     const prix =
-      l.mode === 'manuel' ? l.prixManuel ?? 0 : l.prixAchat * (1 + l.margePourcent / 100);
-    totalHTBrut += prix * l.quantite;
+      l.mode === 'manuel'
+        ? parseNombreFr(l.prixManuel)
+        : parseNombreFr(l.prixAchat) * (1 + parseNombreFr(l.margePourcent) / 100);
+    totalHTBrut += prix * parseNombreFr(l.quantite);
   });
 
   // Catégories dynamiques
@@ -528,13 +533,13 @@ Le nom est automatiquement sauvegardé et sera proposé par défaut lors de la c
 
       for (const col of cat.colonnes) {
         if (col.type === 'prix') {
-          pu += parseFloat(ligne[col.nom]) || 0;
+          pu += parseNombreFr(ligne[col.nom]);
         } else if (col.type === 'prixAvecMarge') {
-          const achat = parseFloat(ligne[col.nom + '_achat']) || 0;
-          const marge = parseFloat(ligne[col.nom + '_marge']) || 0;
+          const achat = parseNombreFr(ligne[col.nom + '_achat']);
+          const marge = parseNombreFr(ligne[col.nom + '_marge']);
           pu += achat * (1 + marge / 100);
         } else if (col.type === 'quantite') {
-          quantite = parseFloat(ligne[col.nom]) || 1;
+          quantite = parseNombreFr(ligne[col.nom]);
         }
       }
 
